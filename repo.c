@@ -1,7 +1,7 @@
 #include "common.h"
 #include "repo.h"
 
-Repo CreateRepo(char* name) {
+/*Repo CreateRepo(char* name) {
 	Repo temp = NULL;
 
 	temp = (Repo)malloc(sizeof(*temp));
@@ -18,4 +18,4 @@ Repo CreateRepo(char* name) {
 		printf("");
 
 	return temp;
-}
+}*/

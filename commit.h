@@ -16,14 +16,14 @@ struct _commit {
 }; typedef struct _commit* Commit;
 
 struct _head {
-
-
 	Commit commitPointer;
 	struct _head* nextHead;
 
-}; typedef struct _head Head;
+}; typedef struct _head* Head;
 
 Commit CreateCommit(TreeNode, Commit);
 Commit AllocateCommit();
+int GetHeads(Head, char*); Commit CommonAncestor(Commit, Commit);
+int FixPathway(Head);
 
 #endif

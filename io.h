@@ -7,9 +7,8 @@
 #include "repo.h"
 #include "file_manip.h"
 
-int ConstructTreeFromFiles(TreeNode, char*);
-Commit ConstructCommitTree(char*);
-Commit FindParent(char*);
+
+Commit ConstructBranch(char*);
 
 
 

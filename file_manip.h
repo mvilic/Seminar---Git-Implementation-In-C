@@ -10,6 +10,6 @@
 
 int DirectoryExists(char*);
 
-bool ListDirectoryContents(const wchar_t*);
+int ListDirectoryContents(const wchar_t*);
+int RemoveDirectoryFull(const wchar_t*);
 
-unsigned int Hash(const char*);

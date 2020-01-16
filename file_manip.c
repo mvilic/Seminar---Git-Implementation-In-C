@@ -12,7 +12,7 @@ int DirectoryExists(char* path) {
 		return RETURN_NOTDIR;
 }
 
-bool ListDirectoryContents(const wchar_t* sDir)
+int ListDirectoryContents(const wchar_t* sDir)
 {
 	WIN32_FIND_DATA fdFile;
 	HANDLE hFind = NULL;
@@ -55,21 +55,42 @@ bool ListDirectoryContents(const wchar_t* sDir)
 	return RETURN_OK;
 }
 
-unsigned int Hash(const char* str)
+int RemoveDirectoryFull(const wchar_t* sDir)
 {
-	int key = 3;
-	unsigned int hash = 0;
-	FILE* file = NULL;
-	char buffer[BUFFER_SIZE] = { 0 };
+	WIN32_FIND_DATA fdFile;
+	HANDLE hFind = NULL;
+	char pathBuffer[2048];
+	wchar_t sPath[2048];
 
-	file = fopen(str, "r");
-	if (file == NULL)
-		return RETURN_WARNING_FILE_OPEN;
+	//Specify a file mask. *.* = We want everything! 
+	wsprintf(sPath, L"%s\\*.*", sDir);
 
-	while (!feof(file)) {
-		hash = hash * key + getc(file);
+	if ((hFind = FindFirstFile(sPath, &fdFile)) == INVALID_HANDLE_VALUE)
+	{
+		wprintf(L"Path not found: [%s]\n", sDir);
+		return RETURN_NOEXIST;
 	}
 
-	fclose(file);
-	return hash;
+	do
+	{
+		if (wcscmp(fdFile.cFileName, L".") != 0 && wcscmp(fdFile.cFileName, L"..") != 0)
+		{
+			wsprintf(sPath, L"%s\\%s", sDir, fdFile.cFileName);
+			wcstombs(pathBuffer, sPath, 2048);
+
+			//Is the entity a File or Folder? 
+			if (fdFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			{
+				RemoveDirectoryFull(sPath);
+				RemoveDirectoryA(pathBuffer);
+			}
+			else {
+				DeleteFileA(pathBuffer);
+			}
+		}
+	} while (FindNextFile(hFind, &fdFile));
+
+	FindClose(hFind);
+
+	return RETURN_OK;
 }

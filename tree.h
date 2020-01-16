@@ -17,6 +17,6 @@ typedef struct _treeNode {
 }_treeNode; typedef _treeNode* TreeNode;
 
 TreeNode CreateTreeNode(char*);
-
+unsigned int Hash(const char*);
 #endif
 

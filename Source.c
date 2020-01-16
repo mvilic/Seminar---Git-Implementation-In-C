@@ -5,10 +5,11 @@
 #include "tree.h"
 #include "repo.h"
 
-int main() {
-	
-	Commit test = NULL;
-	test = FindParent("sample_repo\\.git\\.commits\\2754");
+int main() {	
+	Head heads = AllocateHead(); Commit commonAncestor = NULL;
+	char gitDir[2048] = "sample_repo\\.git";
+	GetHeads(heads, gitDir);
+	commonAncestor = CommonAncestor(heads->commitPointer, heads->nextHead->commitPointer);
 	
 
 	return 0;
