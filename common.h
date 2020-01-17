@@ -9,9 +9,11 @@
 #include <io.h>
 #include <wincrypt.h>
 #include <stdbool.h>
-#include "file_manip.h"
+#include <wchar.h>
+
 
 #define BUFFER_SIZE 2048
+#define MD5LEN 16
 
 #define RETURN_OK 0
 #define RETURN_ERROR_MEM_ALLOC -1

@@ -31,7 +31,7 @@ Head AllocateHead() {
 	return temp;
 }
 
-Commit CreateCommit(TreeNode passedFileTree, Commit passedParentCommit) {
+Commit CreateCommit(FolderNode passedFileTree, Commit passedParentCommit) {
 	char buffer[BUFFER_SIZE] = { 0 };
 	Commit temp = AllocateCommit();
 
@@ -48,15 +48,15 @@ Commit CreateCommit(TreeNode passedFileTree, Commit passedParentCommit) {
 }
 
 int GetHeads(Head heads, char* gitDir) {
-	FILE* headsFile = NULL;
+	FILE* headsFile = NULL; Head headsStart = heads;
 	char parseBuffer[2048];
 	char indexPath[2048];
 
 	sprintf(indexPath, "%s\\%s", gitDir, ".heads");
 	headsFile = fopen(indexPath, "r");
-	while (fgets(parseBuffer, 2048, headsFile)) {
+	while (fgets(parseBuffer, BUFFER_SIZE, headsFile)) {
 		parseBuffer[strcspn(parseBuffer, "\n")] = '\0';
-		heads->commitPointer = ConstructBranch(parseBuffer);
+		heads->commitPointer = ConstructCommitTree(parseBuffer, headsStart);
 		heads->nextHead = AllocateHead();
 		heads = heads->nextHead;
 	}
@@ -68,6 +68,9 @@ int GetHeads(Head heads, char* gitDir) {
 
 Commit CommonAncestor(Commit commit1, Commit commit2) {
 	Commit commit2Start = NULL;
+
+	if (commit1 == NULL || commit2 == NULL)
+		return NULL;
 
 	commit2Start = commit2;
 	while (commit1->parentCommit != NULL) {
@@ -86,12 +89,19 @@ Commit CommonAncestor(Commit commit1, Commit commit2) {
 	return NULL;
 };
 
-int FixPathway(Head heads) {
-	Commit master = NULL; Commit reference = NULL;
+Commit CheckPathway(Commit commit1, char* parentPath) {
+	Commit commit2Start = NULL;
 
-	while()
+	if (commit1 == NULL)
+		return NULL;
+
 	
+	while (commit1->parentCommit != NULL) {
+			if (_strcmpi(commit1->commitPath, parentPath) == 0)
+				return commit1;
+			else
+				commit1 = commit1->parentCommit;
+	}
 
-
-	return RETURN_OK;
-}
+	return NULL;
+};

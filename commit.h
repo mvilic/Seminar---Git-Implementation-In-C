@@ -11,7 +11,7 @@ struct _commit {
 	char branchName[2048];
 	SYSTEMTIME commitDate;
 	struct _commit* parentCommit;
-	TreeNode fileTree;
+	FolderNode fileTree;
 
 }; typedef struct _commit* Commit;
 
@@ -21,9 +21,9 @@ struct _head {
 
 }; typedef struct _head* Head;
 
-Commit CreateCommit(TreeNode, Commit);
+Commit CreateCommit(FolderNode, Commit);
 Commit AllocateCommit();
 int GetHeads(Head, char*); Commit CommonAncestor(Commit, Commit);
-int FixPathway(Head);
+Commit CheckPathway(Commit, char*);
 
 #endif

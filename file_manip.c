@@ -17,7 +17,7 @@ int ListDirectoryContents(const wchar_t* sDir)
 	WIN32_FIND_DATA fdFile;
 	HANDLE hFind = NULL;
 
-	wchar_t sPath[2048];
+	wchar_t sPath[BUFFER_SIZE];
 
 	//Specify a file mask. *.* = We want everything! 
 	wsprintf(sPath, L"%s\\*.*", sDir);
@@ -59,10 +59,10 @@ int RemoveDirectoryFull(const wchar_t* sDir)
 {
 	WIN32_FIND_DATA fdFile;
 	HANDLE hFind = NULL;
-	char pathBuffer[2048];
-	wchar_t sPath[2048];
+	char pathBuffer[BUFFER_SIZE];
+	wchar_t sPath[BUFFER_SIZE];
 
-	//Specify a file mask. *.* = We want everything! 
+	//Specify a file mask. *.* = everything
 	wsprintf(sPath, L"%s\\*.*", sDir);
 
 	if ((hFind = FindFirstFile(sPath, &fdFile)) == INVALID_HANDLE_VALUE)
@@ -76,9 +76,9 @@ int RemoveDirectoryFull(const wchar_t* sDir)
 		if (wcscmp(fdFile.cFileName, L".") != 0 && wcscmp(fdFile.cFileName, L"..") != 0)
 		{
 			wsprintf(sPath, L"%s\\%s", sDir, fdFile.cFileName);
-			wcstombs(pathBuffer, sPath, 2048);
+			wcstombs(pathBuffer, sPath, BUFFER_SIZE);
 
-			//Is the entity a File or Folder? 
+			//File or Folder? 
 			if (fdFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			{
 				RemoveDirectoryFull(sPath);

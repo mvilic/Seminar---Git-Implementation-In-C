@@ -7,16 +7,25 @@
 #define FILESTATE_MODIFIED 98
 #define FILESTATE_STAGED 99
 
-typedef struct _treeNode {
+typedef struct _fileNode {
 
 	char* filePath;
-	unsigned int fileHash;
+	char* fileHash;
 	int fileState;
-	struct _treenode* nextFile;
+	struct _fileNode* nextFile;
 
-}_treeNode; typedef _treeNode* TreeNode;
+}_fileNode; typedef _fileNode* FileNode;
 
-TreeNode CreateTreeNode(char*);
-unsigned int Hash(const char*);
+typedef struct _folderNode {
+
+	char* folderPath;
+	FileNode fileTree;
+	struct _folderNode* nextFolder;
+
+}_folderNode; typedef _folderNode* FolderNode;
+
+
+
+unsigned long Hash(const char*);
 #endif
 

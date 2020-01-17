@@ -9,6 +9,7 @@
 
 
 Commit ConstructBranch(char*);
+Commit ConstructCommitTree(char*, Head);
 
 
 

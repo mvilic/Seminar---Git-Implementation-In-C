@@ -6,11 +6,9 @@
 #include "repo.h"
 
 int main() {	
-	Head heads = AllocateHead(); Commit commonAncestor = NULL;
+	/*Head heads = AllocateHead(); Commit commonAncestor = NULL;
 	char gitDir[2048] = "sample_repo\\.git";
-	GetHeads(heads, gitDir);
-	commonAncestor = CommonAncestor(heads->commitPointer, heads->nextHead->commitPointer);
-	
+	GetHeads(heads, gitDir);*/
 
 	return 0;
 }
