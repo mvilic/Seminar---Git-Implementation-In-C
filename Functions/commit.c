@@ -58,6 +58,7 @@ int GetHeads(Head heads, char* gitDir) {
 		parseBuffer[strcspn(parseBuffer, "\n")] = '\0';
 		heads->commitPointer = ConstructCommitTree(parseBuffer, headsStart);
 		heads->nextHead = AllocateHead();
+		ForeignReferences(heads->commitPointer);
 		heads = heads->nextHead;
 	}
 
@@ -79,9 +80,7 @@ Commit CommonAncestor(Commit commit1, Commit commit2) {
 				return commit1;
 			else
 				commit2=commit2->parentCommit;
-		
 		}
-		
 		commit2 = commit2Start;
 		commit1 = commit1->parentCommit;
 	}
@@ -94,7 +93,6 @@ Commit CheckPathway(Commit commit1, char* parentPath) {
 
 	if (commit1 == NULL)
 		return NULL;
-
 	
 	while (commit1->parentCommit != NULL) {
 			if (_strcmpi(commit1->commitPath, parentPath) == 0)
@@ -105,3 +103,89 @@ Commit CheckPathway(Commit commit1, char* parentPath) {
 
 	return NULL;
 };
+
+int ForeignReferences(Commit commitHead) { //ne stvaraj novi nego procitaj i iteriraj po branchu dok ne dodjes, pa izjednaci pokazivace
+	FILE* fp = NULL;
+	char indexFilePath[BUFFER_SIZE];
+	char parseBuffer[BUFFER_SIZE];
+	char* token = NULL;
+	char* entryToken = NULL;
+	char* commitID = NULL;
+
+	while (commitHead->parentCommit != NULL) {
+		sprintf(indexFilePath, "%s\\%s", commitHead->commitPath, ".commit");
+		fp = fopen(indexFilePath, "r");
+		if (fp == NULL)
+			return RETURN_WARNING_FILE_OPEN;
+
+		while (fgets(parseBuffer, BUFFER_SIZE, fp)) {
+			parseBuffer[strcspn(parseBuffer, "\n")] = '\0';
+			entryToken = strtok(parseBuffer, ":");									//parse buffer postaje commitID\....\filename
+			if (!_strcmpi(entryToken, "ForeignFile")) {
+				token = strtok(NULL, "\\");											//parse buffer postaje ....\filename
+
+			}
+
+
+		}
+
+		
+		commitHead = commitHead->parentCommit;
+	}
+	return RETURN_OK;
+}
+
+//current Folder je root folder stabla u commitu. path je putanja do filea bez commitID foldera
+int InsertForeignReference(FolderNode parentFolder, char* path, char* foreignCommitID, char* nativeCommitID) {
+	char* folderToken = NULL;
+	char* fileToken = NULL; char* targetFileToken = NULL;
+	char* commitFolderToken = NULL;
+	char targetPathBuffer[BUFFER_SIZE];
+	FileNode currentFile = parentFolder->fileList;
+	FolderNode firstOfLevel = NULL;
+	FolderNode currentFolder = NULL;
+	FolderNode temp = NULL;
+	FILE* fp = NULL;
+
+
+	fileToken = strrchr(path, '\\'); //izvuci ime filea
+	//budaletino imas gotov kod u io. samo construct file tree uz extra provjere
+	if (fileToken == NULL) {
+		while (currentFile->nextFile != NULL)
+			currentFile = currentFile->nextFile;
+
+		strcpy(targetPathBuffer, parentFolder->folderPath);
+		targetFileToken = strtok(targetPathBuffer, nativeCommitID);
+		sprintf(targetPathBuffer, "%s%s\\%s", targetFileToken, foreignCommitID, path);
+		fp = fopen(targetPathBuffer, "r");
+		fileToken = hash(targetPathBuffer);
+		currentFile->nextFile = CreateFileNode(targetPathBuffer);
+		return RETURN_OK;
+	}
+
+	fileToken++;
+	strcpy(targetPathBuffer, path);
+	currentFolder = parentFolder->firstChild;
+	firstOfLevel = currentFolder;
+	folderToken = strtok(targetPathBuffer, "\\"); //prvi folder u pathu
+	
+	while (folderToken != NULL) {
+		while (currentFolder != NULL) {
+			if (strstr(currentFolder->folderPath, folderToken)) {
+				InsertForeignReference(currentFolder, DelimiterSlice(path, '\\'), foreignCommitID, nativeCommitID);
+				break;
+			}
+			else {
+				currentFolder = currentFolder->nextSibling;
+			}
+			
+			currentFolder->nextSibling;
+		
+		}
+		
+
+		folderToken = strtok(NULL, "\\");
+	}
+	
+
+}

@@ -23,10 +23,43 @@ FolderNode CreateFolderNode(char* path) {
 		return NULL;
 
 	strcpy(temp->folderPath, path);
-	temp->fileTree = NULL;
-	temp->nextFolder = NULL;
+	temp->fileList = NULL;
+	temp->nextSibling = NULL;
+	temp->firstChild = NULL;
 
 	return temp;
+}
+
+int InsertChild(FolderNode parentFolder, FolderNode toInsert) {
+	FolderNode firstChild = parentFolder->firstChild; //da bi se moglo setati po listi dijece i siblinga bez utjecanja na originalnu strukturu
+
+	if (parentFolder->firstChild == NULL)
+		parentFolder->firstChild = toInsert;
+	else {
+		while (firstChild->nextSibling != NULL)
+			firstChild = firstChild->nextSibling;
+
+		firstChild->nextSibling = toInsert;
+	}
+
+	return RETURN_OK;
+}
+
+int AppendFile(FolderNode folder, FileNode fileToInsert) {
+	FileNode firstFile = folder->fileList;
+
+	if (folder->fileList == NULL) {
+		folder->fileList = fileToInsert;
+		return RETURN_OK;
+	}
+	else {
+		while (firstFile->nextFile != NULL)
+			firstFile = firstFile->nextFile;
+
+		firstFile->nextFile = fileToInsert;
+	}
+
+	return RETURN_OK;
 }
 
 unsigned long Hash(const char* str)
@@ -46,112 +79,4 @@ unsigned long Hash(const char* str)
 
 	fclose(file);
 	return hash;
-}
-
-DWORD hash(char* filePath)
-{
-	DWORD dwStatus = 0;
-	BOOL bResult = FALSE;
-	HCRYPTPROV hProv = 0;
-	HCRYPTHASH hHash = 0;
-	HANDLE hFile = NULL;
-	BYTE rgbFile[6000];
-	DWORD cbRead = 0;
-	BYTE rgbHash[MD5LEN];
-	DWORD cbHash = 0;
-	CHAR rgbDigits[] = "0123456789abcdef";
-	LPCWSTR filename[BUFFER_SIZE];
-	char result[MD5LEN*2 + 1];
-	int j = 0;
-
-	mbsrtowcs(filename, &filePath, BUFFER_SIZE, NULL);
-
-	hFile = CreateFile(filename,
-		GENERIC_READ,
-		FILE_SHARE_READ,
-		NULL,
-		OPEN_EXISTING,
-		FILE_FLAG_SEQUENTIAL_SCAN,
-		NULL);
-
-	if (INVALID_HANDLE_VALUE == hFile)
-	{
-		dwStatus = GetLastError();
-		printf("Error opening file %s\nError: %d\n", filename,
-			dwStatus);
-		return NULL;
-	}
-
-	if (!CryptAcquireContext(&hProv,
-		NULL,
-		NULL,
-		PROV_RSA_FULL,
-		CRYPT_VERIFYCONTEXT))
-	{
-		dwStatus = GetLastError();
-		printf("CryptAcquireContext failed: %d\n", dwStatus);
-		CloseHandle(hFile);
-		return NULL;
-	}
-
-	if (!CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash))
-	{
-		dwStatus = GetLastError();
-		printf("CryptAcquireContext failed: %d\n", dwStatus);
-		CloseHandle(hFile);
-		CryptReleaseContext(hProv, 0);
-		return NULL;
-	}
-
-	while (bResult = ReadFile(hFile, rgbFile, BUFFER_SIZE,
-		&cbRead, NULL))
-	{
-		if (0 == cbRead)
-		{
-			break;
-		}
-
-		if (!CryptHashData(hHash, rgbFile, cbRead, 0))
-		{
-			dwStatus = GetLastError();
-			printf("CryptHashData failed: %d\n", dwStatus);
-			CryptReleaseContext(hProv, 0);
-			CryptDestroyHash(hHash);
-			CloseHandle(hFile);
-			return NULL;
-		}
-	}
-
-	if (!bResult)
-	{
-		dwStatus = GetLastError();
-		printf("ReadFile failed: %d\n", dwStatus);
-		CryptReleaseContext(hProv, 0);
-		CryptDestroyHash(hHash);
-		CloseHandle(hFile);
-		return NULL;
-	}
-
-	cbHash = MD5LEN;
-	if (CryptGetHashParam(hHash, HP_HASHVAL, rgbHash, &cbHash, 0))
-	{
-		for (DWORD i = 0; i < cbHash; i++)
-		{
-			result[j++] = rgbDigits[rgbHash[i] >> 4];
-			result[j++] = rgbDigits[rgbHash[i] & 0xf];
-		}
-		result[j] = '\0';
-	}
-	else
-	{
-		dwStatus = GetLastError();
-		printf("CryptGetHashParam failed: %d\n", dwStatus);
-	}
-
-	CryptDestroyHash(hHash);
-	CryptReleaseContext(hProv, 0);
-	CloseHandle(hFile);
-	
-
-	return result;
 }

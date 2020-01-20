@@ -10,7 +10,8 @@
 #include <wincrypt.h>
 #include <stdbool.h>
 #include <wchar.h>
-
+#include <lmcons.h>
+#include "utility.h"
 
 #define BUFFER_SIZE 2048
 #define MD5LEN 16

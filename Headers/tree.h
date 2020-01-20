@@ -9,7 +9,7 @@
 
 typedef struct _fileNode {
 
-	char* filePath;
+	char filePath[BUFFER_SIZE];
 	char* fileHash;
 	int fileState;
 	struct _fileNode* nextFile;
@@ -18,14 +18,17 @@ typedef struct _fileNode {
 
 typedef struct _folderNode {
 
-	char* folderPath;
-	FileNode fileTree;
-	struct _folderNode* nextFolder;
+	char folderPath[BUFFER_SIZE];
+	FileNode fileList;
+	struct _folderNode* nextSibling;
+	struct _folderNode* firstChild;
 
 }_folderNode; typedef _folderNode* FolderNode;
 
+FolderNode CreateFolderNode(char*); FileNode CreateFileNode(char*);
+int InsertFileNode(FolderNode, FileNode); int InsertFolderNode(FolderNode, FolderNode);
+int InsertChild(FolderNode, FolderNode); int AppendFile(FolderNode, FileNode);
 
 
-unsigned long Hash(const char*);
 #endif
 

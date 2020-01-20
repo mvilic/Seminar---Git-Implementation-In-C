@@ -10,7 +10,7 @@
 
 Commit ConstructBranch(char*);
 Commit ConstructCommitTree(char*, Head);
-
+int ConstructFileTree(FolderNode, char*);
 
 
 #endif
