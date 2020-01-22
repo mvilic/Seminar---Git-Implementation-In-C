@@ -1,14 +1,19 @@
 #include "tree.h"
 
 FileNode CreateFileNode(char* path) {
-	FileNode temp = NULL;
+	FileNode temp = NULL; char* tempHash = NULL;
 	temp = (FileNode)malloc(sizeof(*temp));
 
 	if (temp == NULL)
 		return NULL;
 
 	strcpy(temp->filePath, path);
-	temp->fileHash = hash(path);
+	tempHash = hash(path);
+	if (tempHash == NULL)
+		return NULL;
+
+	strcpy(temp->fileHash,tempHash);
+	free(tempHash);
 	temp->fileState = FILESTATE_COMMITTED;
 	temp->nextFile = NULL;
 

@@ -14,8 +14,12 @@ char* hash(char* filePath)
 	DWORD cbHash = 0;
 	CHAR rgbDigits[] = "0123456789abcdef";
 	wchar_t filename[BUFFER_SIZE];
-	char result[MD5LEN * 2 + 1];
 	int j = 0;
+
+	char *result=(char*)malloc(MD5LEN * 2 + 1);
+
+	if (result == NULL)
+		return NULL;
 
 	mbstowcs(filename, filePath, BUFFER_SIZE);
 
@@ -126,8 +130,8 @@ int ListDirectoryContents(const wchar_t* sDir)
 	HANDLE hFind = NULL;
 	wchar_t sPath[BUFFER_SIZE];
 
-	//Specify a file mask. *.*  everything 
-	wsprintf(sPath, L"%s\\*.*", sDir);
+	//file mask. *.* = everything 
+	wsprintf(sPath, L"%s/*.*", sDir);
 
 	if ((hFind = FindFirstFile(sPath, &fdFile)) == INVALID_HANDLE_VALUE)
 	{
@@ -139,7 +143,7 @@ int ListDirectoryContents(const wchar_t* sDir)
 	{
 		if (wcscmp(fdFile.cFileName, L".") != 0 && wcscmp(fdFile.cFileName, L"..") != 0)
 		{ 
-			wsprintf(sPath, L"%s\\%s", sDir, fdFile.cFileName);
+			wsprintf(sPath, L"%s/%s", sDir, fdFile.cFileName);
 
 			//File or Folder? 
 			if (fdFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)

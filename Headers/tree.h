@@ -10,7 +10,7 @@
 typedef struct _fileNode {
 
 	char filePath[BUFFER_SIZE];
-	char* fileHash;
+	char fileHash[33];
 	int fileState;
 	struct _fileNode* nextFile;
 

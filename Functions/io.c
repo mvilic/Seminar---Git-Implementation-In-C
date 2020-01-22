@@ -8,7 +8,7 @@ Commit ConstructBranch(char* path) { //path je put do direktorija ukljucujuci i 
 	char* token = NULL;
 	char* entryToken = NULL;
 
-	sprintf(pathBuffer, "%s\\%s", path, ".commit");
+	sprintf(pathBuffer, "%s/%s", path, ".commit");
 	fp = fopen(pathBuffer, "r");
 	while (fgets(parseBuffer, 2048, fp)) {
 		parseBuffer[strcspn(parseBuffer, "\n")] = '\0';
@@ -18,14 +18,14 @@ Commit ConstructBranch(char* path) { //path je put do direktorija ukljucujuci i 
 			if (_strcmpi(token, "NULL")) {
 				temp = AllocateCommit();
 					strcpy(temp->commitPath, path);
-					path = strrchr(path, '\\') + 1;
+					path = strrchr(path, '/') + 1;
 					sscanf(path, "%d", &(temp->commitID));
 					token[strcspn(token, "\n")] = '\0';
 					temp->parentCommit = ConstructBranch(token);
 			}
 			else {
 				temp = AllocateCommit();
-				path = strrchr(path, '\\') + 1;
+				path = strrchr(path, '/') + 1;
 				sscanf(path, "%d", &(temp->commitID));
 				temp->parentCommit = NULL;
 			}
@@ -39,7 +39,7 @@ Commit ConstructBranch(char* path) { //path je put do direktorija ukljucujuci i 
 	return temp;
 }
 
-Commit ConstructCommitTree(char* path, Head heads) { //path je put do direktorija ukljucujuci i njega: .git/.commits/####
+Commit ConstructCommitTree(char* path, Head heads) {
 	Commit temp = NULL, commonAncestor = NULL;
 	FILE* fp = NULL; Head firstHead = heads;
 	char pathBuffer[BUFFER_SIZE] = { 0 };
@@ -47,7 +47,7 @@ Commit ConstructCommitTree(char* path, Head heads) { //path je put do direktorij
 	char* token = NULL;
 	char* entryToken = NULL;
 
-	sprintf(pathBuffer, "%s\\%s", path, ".commit");
+	sprintf(pathBuffer, "%s/%s", path, ".commit");
 	fp = fopen(pathBuffer, "r");
 	while (fgets(parseBuffer, BUFFER_SIZE, fp)) {
 		parseBuffer[strcspn(parseBuffer, "\n")] = '\0';
@@ -61,7 +61,7 @@ Commit ConstructCommitTree(char* path, Head heads) { //path je put do direktorij
 			if (_strcmpi(token, "NULL")) {
 				temp = AllocateCommit();
 				strcpy(temp->commitPath, path);
-				path = strrchr(path, '\\') + 1;
+				path = strrchr(path, '/') + 1;
 				sscanf(path, "%d", &(temp->commitID));
 				token[strcspn(token, "\n")] = '\0';
 				while (heads != NULL && heads->commitPointer!=NULL) {
@@ -79,7 +79,7 @@ Commit ConstructCommitTree(char* path, Head heads) { //path je put do direktorij
 			}
 			else {
 				temp = AllocateCommit();
-				path = strrchr(path, '\\') + 1;
+				path = strrchr(path, '/') + 1;
 				sscanf(path, "%d", &(temp->commitID));
 				temp->parentCommit = NULL;
 			}
@@ -104,7 +104,7 @@ int ConstructFileTree(FolderNode parentFolder, char* passedPath)
 	char pathBuffer[BUFFER_SIZE];
 
 	mbstowcs(sDir, passedPath, BUFFER_SIZE);
-	wsprintf(sPath, L"%s\\*.*", sDir);
+	wsprintf(sPath, L"%s/*.*", sDir);
 
 	if ((hFind = FindFirstFile(sPath, &fdFile)) == INVALID_HANDLE_VALUE)
 	{
@@ -116,7 +116,7 @@ int ConstructFileTree(FolderNode parentFolder, char* passedPath)
 	{
 		if (wcscmp(fdFile.cFileName, L".") != 0 && wcscmp(fdFile.cFileName, L"..") !=0 && wcscmp(fdFile.cFileName, L".commit") != 0)
 		{
-			wsprintf(sPath, L"%s\\%s", sDir, fdFile.cFileName);
+			wsprintf(sPath, L"%s/%s", sDir, fdFile.cFileName);
 			wcstombs(pathBuffer, sPath, BUFFER_SIZE);
 
 			if (fdFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)

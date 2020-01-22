@@ -4,17 +4,24 @@
 #include "tree.h"
 #include "repo.h"
 #include "io.h"
+#include <errno.h>
 
 
-int main() {	
+int main() {
+	/*FILE* fp = NULL;
+	char* path = NULL;
 	Head heads = AllocateHead();
-	char gitDir[2048] = "sample_repo\\.git";
-	GetHeads(heads, gitDir);
+	char gitDir[2048] = "sample_repo/.git";
+	GetHeads(heads, gitDir);*/
 
-	InsertForeignReference(heads->commitPointer->fileTree, "headers\\frgn.txt", "2365", "2754");
+	
+	
+
+	
 
 	return 0;
-}
+	}
+
 
 /*
 int main(int argc, char** args) {

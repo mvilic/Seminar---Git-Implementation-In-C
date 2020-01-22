@@ -40,7 +40,7 @@ Commit CreateCommit(FolderNode passedFileTree, Commit passedParentCommit) {
 	temp->fileTree = passedFileTree;
 	temp->parentCommit = passedParentCommit;
 
-	sprintf(buffer, "sample_repo\\.git\\commits\\%d", temp->commitID);
+	sprintf(buffer, "sample_repo/.git/.commits/%d", temp->commitID);
 
 	strcpy(temp->commitPath, buffer);
 
@@ -52,7 +52,7 @@ int GetHeads(Head heads, char* gitDir) {
 	char parseBuffer[2048];
 	char indexPath[2048];
 
-	sprintf(indexPath, "%s\\%s", gitDir, ".heads");
+	sprintf(indexPath, "%s/%s", gitDir, ".heads");
 	headsFile = fopen(indexPath, "r");
 	while (fgets(parseBuffer, BUFFER_SIZE, headsFile)) {
 		parseBuffer[strcspn(parseBuffer, "\n")] = '\0';
@@ -113,7 +113,7 @@ int ForeignReferences(Commit commitHead) { //ne stvaraj novi nego procitaj i ite
 	char* commitID = NULL;
 
 	while (commitHead->parentCommit != NULL) {
-		sprintf(indexFilePath, "%s\\%s", commitHead->commitPath, ".commit");
+		sprintf(indexFilePath, "%s/%s", commitHead->commitPath, ".commit");
 		fp = fopen(indexFilePath, "r");
 		if (fp == NULL)
 			return RETURN_WARNING_FILE_OPEN;
@@ -122,7 +122,7 @@ int ForeignReferences(Commit commitHead) { //ne stvaraj novi nego procitaj i ite
 			parseBuffer[strcspn(parseBuffer, "\n")] = '\0';
 			entryToken = strtok(parseBuffer, ":");									//parse buffer postaje commitID\....\filename
 			if (!_strcmpi(entryToken, "ForeignFile")) {
-				token = strtok(NULL, "\\");											//parse buffer postaje ....\filename
+				token = strtok(NULL, "/");											//parse buffer postaje ....\filename
 
 			}
 
@@ -148,7 +148,7 @@ int InsertForeignReference(FolderNode parentFolder, char* path, char* foreignCom
 	FILE* fp = NULL;
 
 
-	fileToken = strrchr(path, '\\'); //izvuci ime filea
+	fileToken = strrchr(path, '/'); //izvuci ime filea
 	//budaletino imas gotov kod u io. samo construct file tree uz extra provjere
 	if (fileToken == NULL) {
 		while (currentFile->nextFile != NULL)
@@ -156,7 +156,7 @@ int InsertForeignReference(FolderNode parentFolder, char* path, char* foreignCom
 
 		strcpy(targetPathBuffer, parentFolder->folderPath);
 		targetFileToken = strtok(targetPathBuffer, nativeCommitID);
-		sprintf(targetPathBuffer, "%s%s\\%s", targetFileToken, foreignCommitID, path);
+		sprintf(targetPathBuffer, "%s%s/%s", targetFileToken, foreignCommitID, path);
 		fp = fopen(targetPathBuffer, "r");
 		fileToken = hash(targetPathBuffer);
 		currentFile->nextFile = CreateFileNode(targetPathBuffer);
@@ -167,12 +167,12 @@ int InsertForeignReference(FolderNode parentFolder, char* path, char* foreignCom
 	strcpy(targetPathBuffer, path);
 	currentFolder = parentFolder->firstChild;
 	firstOfLevel = currentFolder;
-	folderToken = strtok(targetPathBuffer, "\\"); //prvi folder u pathu
+	folderToken = strtok(targetPathBuffer, "/"); //prvi folder u pathu
 	
 	while (folderToken != NULL) {
 		while (currentFolder != NULL) {
 			if (strstr(currentFolder->folderPath, folderToken)) {
-				InsertForeignReference(currentFolder, DelimiterSlice(path, '\\'), foreignCommitID, nativeCommitID);
+				InsertForeignReference(currentFolder, DelimiterSlice(path, '/'), foreignCommitID, nativeCommitID);
 				break;
 			}
 			else {
@@ -184,8 +184,71 @@ int InsertForeignReference(FolderNode parentFolder, char* path, char* foreignCom
 		}
 		
 
-		folderToken = strtok(NULL, "\\");
+		folderToken = strtok(NULL, "/");
 	}
 	
 
+}
+
+int InsertForeignReference2(FolderNode commitFolder, char* path) { //prvobitno se kao parent folder salje sample_repo/.git/.commits/#### -- dalje bi se rekurzivno triba slati first child
+
+	/*char* pathTokens[20];
+	char auxPathBuffer[BUFFER_SIZE];
+	int i = 0, j = 0, fileNamePosition = 0;
+
+	strcpy(auxPathBuffer, path);
+
+	pathTokens[i++] = strtok(path, "/");
+	while ((pathTokens[i] = strtok(NULL, "/")) != NULL) //iman niz foldera u pathu, od kojih je zadnji ime datoteke
+		i++;
+
+	fileNamePosition = i-1;*/
+
+	char auxPathBuffer[BUFFER_SIZE];
+	char* fileName = NULL, token = NULL;
+	char currentPathBuffer[BUFFER_SIZE];
+	FolderNode tempFolder = NULL; FileNode tempFile = NULL;
+	FolderNode currentWorkingFolder = NULL; FileNode currentFile = NULL;
+
+	//path="2365/headers/frgn.txt"
+	//parentFolder->folderPath=sample_repo/.git/.commits/####
+	currentWorkingFolder = commitFolder->firstChild;
+	strcpy(auxPathBuffer, path);
+	fileName = strrchr(path, '/') + 1;
+	token = strtok(path, '/');
+	sprintf(currentPathBuffer, "%s/%s", commitFolder->folderPath, token);
+	while (token = strtok(NULL, '/')) {
+		if (!_strcmpi(token, fileName)) {//zamini hardkodirano sample_repo/.git sa gitdir
+			sprintf(currentPathBuffer, "sample_repo/.git/.commits/%s", auxPathBuffer);
+			tempFile = CreateFileNode(currentPathBuffer);
+
+			AppendFile(commitFolder, tempFile);
+			break;
+		}
+		else{
+			sprintf(currentPathBuffer, "%s/%s", currentPathBuffer, token);
+			while (currentWorkingFolder->nextSibling != NULL) {
+				if (!_strcmpi(currentWorkingFolder->folderPath, currentPathBuffer)) {
+					currentWorkingFolder = currentWorkingFolder->firstChild;
+				
+				
+				}
+				
+				currentWorkingFolder = currentWorkingFolder->nextSibling;
+			}
+			InsertChild(commitFolder, tempFolder);
+		
+		}
+		
+	
+	
+	
+	
+	
+	}
+
+
+
+
+	return RETURN_OK;
 }

@@ -9,8 +9,8 @@ int RemoveDirectoryFull(const wchar_t* sDir)
 	char pathBuffer[BUFFER_SIZE];
 	wchar_t sPath[BUFFER_SIZE];
 
-	//Specify a file mask. *.* = everything
-	wsprintf(sPath, L"%s\\*.*", sDir);
+	//file mask. *.* = everything
+	wsprintf(sPath, L"%s/*.*", sDir);
 
 	if ((hFind = FindFirstFile(sPath, &fdFile)) == INVALID_HANDLE_VALUE)
 	{
@@ -22,7 +22,7 @@ int RemoveDirectoryFull(const wchar_t* sDir)
 	{
 		if (wcscmp(fdFile.cFileName, L".") != 0 && wcscmp(fdFile.cFileName, L"..") != 0)
 		{
-			wsprintf(sPath, L"%s\\%s", sDir, fdFile.cFileName);
+			wsprintf(sPath, L"%s/%s", sDir, fdFile.cFileName);
 			wcstombs(pathBuffer, sPath, BUFFER_SIZE);
 
 			//File or Folder? 
