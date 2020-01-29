@@ -1,0 +1,8 @@
+Parent Commit: sample_repo/.git/.commits/2754
+Branch: Master
+Foreign: 2754/functions/functions.c
+Foreign: 2754/functions/functions2.c
+Foreign: 2754/functions/functions3.c
+Foreign: 2754/headers/myheader.h
+Foreign: 2754/headers/myheader2.h
+Foreign: 2453/mastersource1.c
