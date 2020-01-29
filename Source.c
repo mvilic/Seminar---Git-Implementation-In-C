@@ -10,10 +10,8 @@
 
 #########################################################################
 		To Do:
-				Commit history od brancha
 				Izbornik
 				Error checkanje i handleanje
-				Razna dealokacija
 
 #########################################################################
 
@@ -58,30 +56,3 @@ int main() {
 
 	return RETURN_OK;
 	}
-
-
-/*
-int main(int argc, char** args) {
-
-	char* command = NULL;
-
-	if (argc < 2) {
-		printf("Koristenje: mygit <command>\n");
-	}
-	
-	if (strcmpi(args[1], "add"))
-		Add(args[2]);
-	else if (strcmpi(args[1], "commit"))
-		Commit(args[2]);
-	else if (strcmpi(args[1], "merge"))
-		Merge(args[2]);
-	else if (strcmpi(args[1], "init"))
-		Init();
-	else if (strcmpi(args[1], "status"))
-		Status();
-	else
-		printf("Nepostojeca komanda.\n");
-
-
-	return 0;
-}*/
