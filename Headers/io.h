@@ -7,7 +7,11 @@
 #include "repo.h"
 #include "file_manip.h"
 
-
+/*
+###################################################
+#				Repository Loading				  #
+###################################################
+*/
 Commit ConstructBranch(char*);
 Commit ConstructCommitTree(char*, Head);
 int ConstructFileTree(FolderNode, char*);

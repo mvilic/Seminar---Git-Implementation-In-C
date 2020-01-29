@@ -4,14 +4,21 @@
 #include "common.h"
 #include "tree.h"
 
-struct _commit {
+/*
+###################################################
+#			Structure Definitions				  #
+###################################################
+*/
 
+struct _commit {
+	
 	int commitID;
-	char commitPath[2048];
-	char branchName[2048];
+	char commitPath[BUFFER_SIZE];
+	char branchName[BUFFER_SIZE];
+	char childrenNumber;
 	SYSTEMTIME commitDate;
 	struct _commit* parentCommit;
-	FolderNode fileTree;
+	struct _folderNode *fileTree;
 
 }; typedef struct _commit* Commit;
 
@@ -21,9 +28,42 @@ struct _head {
 
 }; typedef struct _head* Head;
 
-Commit CreateCommit(FolderNode, Commit);
-Commit AllocateCommit();
-int GetHeads(Head, char*); Commit CommonAncestor(Commit, Commit);
-Commit CheckPathway(Commit, char*);
+/*
+###################################################
+#				Memory Management				  #
+###################################################
+*/
+
+Commit AllocateCommit(); Head AllocateHead();
+int DeallocateCommit(Commit toDeallocate); int DeallocateHead(Head toDeallocate);
+int DeallocateBranch(Commit toDeallocate);
+
+/*
+###################################################
+#				General Functions				  #
+###################################################
+*/
+
+Commit CommonAncestor(Commit commit1, Commit commit2); Commit CheckPathway(Commit commit, char* path); 
+int PrintBranchHistory(Commit currentCommit, Commit headOfBranch);
+int ListBranches(Head headCommits); int ListCommitFiles(FolderNode folderTree);
+
+/*
+###################################################
+#				Foreign References				  #
+###################################################
+*/
+
+int ForeignReferences(Commit); int InsertForeignReference(FolderNode, char*);
+int HandleParentForeigns(FolderNode, FolderNode, char*); int PushForeignReferences(FolderNode, char*);
+int BranchForeignReferences(Commit branchedCommit, Commit parentCommit);
+
+/*
+###################################################
+#					Merging						  #
+###################################################
+*/
+
+int MergePass(FolderNode toMergeTree, FolderNode mergeIntoTree, FolderNode commonAncestorTree, char* mergeOriginCommitPath);
 
 #endif

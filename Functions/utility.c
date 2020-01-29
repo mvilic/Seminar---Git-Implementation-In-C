@@ -1,5 +1,4 @@
-#include "common.h"
-#include "utility.h"
+#include "../Headers/utility.h"
 
 char* hash(char* filePath)
 {
@@ -33,9 +32,6 @@ char* hash(char* filePath)
 
 	if (INVALID_HANDLE_VALUE == hFile)
 	{
-		dwStatus = GetLastError();
-		printf("Error opening file %s\nError: %d\n", filename,
-			dwStatus);
 		return NULL;
 	}
 
@@ -175,4 +171,225 @@ char* DelimiterSlice(char* string, char delimiter) {
 
 	return result;
 
+}
+
+int Choice() {
+	int result = 0;
+	char lineBuffer[BUFFER_SIZE];
+
+	do {
+		fgets(lineBuffer, BUFFER_SIZE, stdin);
+		if (lineBuffer[0] == '\n')
+			continue;
+
+		if (sscanf(lineBuffer, "%d", &result) != 1 || tolower(result)!='y' || tolower(result)!='n') {
+			printf("Invalid choice.\nTry again: ");
+			continue;
+		}
+		else
+			break;
+	} while (1);
+
+	return tolower(result);
+}
+
+int Option(int lwr_limit, int uppr_limit) {
+	int result = 0; char buffer[BUFFER_SIZE];
+
+	do {
+		fgets(buffer, BUFFER_SIZE, stdin);
+		if (buffer[0] == '\n')
+			continue;
+
+		if (sscanf(buffer, "%d", &result) != 1 || result > uppr_limit || result < lwr_limit) {
+			printf("Invalid choice. Try again.\nInput: ");
+			continue;
+		}
+		else
+			break;
+	} while (1);
+
+	return result;
+}
+
+Commit CheckoutInputParse(Head heads) {
+	char lineBuffer[BUFFER_SIZE];
+	Head currentHead = heads;
+	int choice = 0;
+	Commit selectedCommit = NULL;
+
+	do {
+		printf("Enter commit ID or branch name.\nTo abort, enter 0.\nInput: ");
+		fgets(lineBuffer, BUFFER_SIZE, stdin);
+
+		if (lineBuffer[0] == '\n')
+			continue;
+		else if (lineBuffer[0] == 0)
+			return NULL;
+
+		lineBuffer[strlen(lineBuffer)-1] = '\0';
+
+		//provjeri jeli uneseno ime brancha
+		while (currentHead->nextHead != NULL) {
+			if (!_strcmpi(currentHead->commitPointer->branchName, lineBuffer)) {
+				selectedCommit = currentHead->commitPointer;
+				return selectedCommit;
+			}
+
+			currentHead = currentHead->nextHead;
+		}
+
+		//nije uneseno ime brancha, provjeri jeli ispravan commitID unesen
+		if (sscanf(lineBuffer, "%d", &choice) != 1) {
+			printf("Invalid input.\n");
+			continue;
+		}
+
+		currentHead = heads;
+		while (currentHead != NULL) {
+			selectedCommit = FindCommit(currentHead->commitPointer, choice);
+			if (selectedCommit != NULL)
+				return selectedCommit;
+
+			currentHead = currentHead->nextHead;
+		}
+
+		if (selectedCommit == NULL) {
+			printf("Commit with ID [%d] not found.\n", choice);
+		}
+
+
+	} while (selectedCommit == NULL);
+}
+
+Commit MergeInputParse(Head heads) {
+	Commit selectedCommit = NULL;
+	Head currentHead = heads;
+	char inputBuffer[BUFFER_SIZE];
+
+	printf("Merge into which branch? Enter 0 to exit.\nInput: ");
+	do {
+		scanf("%s", inputBuffer);
+
+		if (inputBuffer[0] == '\n')
+			continue;
+		else if (inputBuffer[0] == '0')
+			return NULL;
+
+		while (currentHead->commitPointer != NULL) {
+			if (!_strcmpi(inputBuffer, currentHead->commitPointer->branchName)) {
+				selectedCommit = currentHead->commitPointer;
+				break;
+			}
+
+			currentHead = currentHead->nextHead;
+		}
+
+		currentHead = heads;
+		if (selectedCommit == NULL) {
+			printf("Specified branch does not exist. Try again or enter 0 to exit.\nInput: ");
+			continue;
+		}
+		else
+			break;
+
+	} while (selectedCommit == NULL);
+
+
+
+	return selectedCommit;
+}
+
+int ReplaceHeadInIndex(Commit newHead, Commit currentHead) {
+	FILE* headsFile = NULL, * tempFile = NULL;
+	char buffer[BUFFER_SIZE];
+
+	headsFile = fopen("sample_repo/.git/.heads", "r");
+	tempFile = fopen("sample_repo/.git/.heads_temp", "w");
+
+	while (fgets(buffer, BUFFER_SIZE, headsFile)) {
+		if (strstr(buffer, currentHead->commitPath))
+			fprintf(tempFile, "%s\n", newHead->commitPath);
+		else
+			fprintf(tempFile, "%s", buffer);
+	}
+
+	fclose(headsFile);
+	fclose(tempFile);
+	DeleteFileA("sample_repo/.git/.heads");
+	rename("sample_repo/.git/.heads_temp", "sample_repo/.git/.heads");
+
+	return RETURN_OK;
+}
+
+int AppendHeadToIndex(Commit newHead) {
+	FILE* headsFile = NULL;
+
+	headsFile = fopen("sample_repo/.git/.heads", "a");
+
+	fprintf(headsFile, "\n%s", newHead->commitPath);
+
+	fclose(headsFile);
+	return RETURN_OK;
+}
+
+int ErrorReport(int errnum) {
+
+	switch (errnum) {
+	case RETURN_ERROR_MEM_ALLOC: {
+		printf("\n\nERROR: Memory allocation.\n\n");
+		break;
+	}
+	case RETURN_WARNING_FILE_OPEN: {
+		printf("\n\nWARNING: Couldn't open file.\n\n");
+		break;
+	}
+	case RETURN_WARNING_INVALID_FOREIGN_REFERENCE: {
+		printf("\n\nWARNING: Invalid foreign reference.\n\n");
+		break;
+	}
+	case RETURN_USER_ABORT: {
+		printf("\n\nOperation canceled by the user.\n\n");
+		break;
+	}
+	case RETURN_OK: {
+		printf("\n\nSuccess.\n\n");
+		break;
+	}
+	defaut: {
+		printf("\n\nInvalid Error Code.\n\n");
+		break;
+	}
+	}
+
+	return RETURN_OK;
+}
+
+int PrintMenu(char* menu) {
+
+	if (_strcmpi(menu, "Glavni") == 0) {
+		printf("\n\n1:Importati studente, dinamicki alocirati svakog studenta i ispisati podatke o svakom.");
+		printf("\n2:Osnovne manipulacije vezanim listama.");
+		printf("\n3:Zbrajanje i mnozenje polinoma putem vezanih lista.");
+		printf("\n4:Unija i presjek dviju vezanih listi.");
+		printf("\n5:Stog, Red, Kruzni Stog, Red sa prioritetom");
+		printf("\n6:Postfix izrazi");
+		printf("\n0 to exit.\n");
+		printf("Odabir: ");
+		return RETURN_OK;
+	}
+	else if (_strcmpi(menu, "Liste1") == 0) {
+		printf("\nOdaberite opciju:");
+		printf("\n1. Dodavanje na pocetak liste");
+		printf("\n2. Dodavanje na kraj liste");
+		printf("\n3. Brisanje elementa");
+		printf("\n4. Pronalazak elementa po prezimenu");
+		printf("\n5. Ispis liste");
+		printf("\n6. Vise opcija");
+		printf("\n7. Izlaz\n\nOdabir: ");
+		return RETURN_OK;
+	}
+
+	else
+		return RETURN_OK;
 }

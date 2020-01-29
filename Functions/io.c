@@ -1,5 +1,5 @@
-#include "io.h"
-
+#include "../Headers/io.h"
+#include "../Headers/utility.h"
 
 Commit ConstructBranch(char* path) { //path je put do direktorija ukljucujuci i njega .git/.commits/####
 	Commit temp = NULL; FILE* fp = NULL;
@@ -10,7 +10,7 @@ Commit ConstructBranch(char* path) { //path je put do direktorija ukljucujuci i 
 
 	sprintf(pathBuffer, "%s/%s", path, ".commit");
 	fp = fopen(pathBuffer, "r");
-	while (fgets(parseBuffer, 2048, fp)) {
+	while (fgets(parseBuffer, BUFFER_SIZE, fp)) {
 		parseBuffer[strcspn(parseBuffer, "\n")] = '\0';
 		token = strrchr(parseBuffer, ' ') + 1;
 		entryToken = strtok(parseBuffer, ":");
@@ -54,7 +54,7 @@ Commit ConstructCommitTree(char* path, Head heads) {
 		token = strrchr(parseBuffer, ' ') + 1;
 		entryToken = strtok(parseBuffer, ":");
 
-		if(!_strcmpi(entryToken, "Foreign References"))
+		if(!_strcmpi(entryToken, "Foreign"))
 			continue;
 		
 		if (!_strcmpi(entryToken, "Parent Commit")) {
@@ -67,7 +67,12 @@ Commit ConstructCommitTree(char* path, Head heads) {
 				while (heads != NULL && heads->commitPointer!=NULL) {
 					commonAncestor = CheckPathway(heads->commitPointer, token);
 					if (commonAncestor != NULL) {
+						commonAncestor->childrenNumber++;
 						temp->parentCommit = commonAncestor;
+						fgets(parseBuffer, BUFFER_SIZE, fp);
+						parseBuffer[strcspn(parseBuffer, "\n")] = '\0';
+						token = strrchr(parseBuffer, ' ') + 1;
+						strcpy(temp->branchName, token);
 						fclose(fp);
 						return temp;					
 					}
@@ -76,9 +81,11 @@ Commit ConstructCommitTree(char* path, Head heads) {
 				temp->fileTree = CreateFolderNode(temp->commitPath);
 				ConstructFileTree(temp->fileTree, temp->commitPath);
 				temp->parentCommit = ConstructCommitTree(token, firstHead);
+				temp->parentCommit->childrenNumber++;
 			}
 			else {
 				temp = AllocateCommit();
+				strcpy(temp->commitPath, path);
 				path = strrchr(path, '/') + 1;
 				sscanf(path, "%d", &(temp->commitID));
 				temp->parentCommit = NULL;
@@ -114,7 +121,7 @@ int ConstructFileTree(FolderNode parentFolder, char* passedPath)
 
 	do
 	{
-		if (wcscmp(fdFile.cFileName, L".") != 0 && wcscmp(fdFile.cFileName, L"..") !=0 && wcscmp(fdFile.cFileName, L".commit") != 0)
+		if (wcscmp(fdFile.cFileName, L".") != 0 && wcscmp(fdFile.cFileName, L"..") !=0 && wcscmp(fdFile.cFileName, L".commit") != 0 && wcscmp(fdFile.cFileName, L".git")!=0)
 		{
 			wsprintf(sPath, L"%s/%s", sDir, fdFile.cFileName);
 			wcstombs(pathBuffer, sPath, BUFFER_SIZE);

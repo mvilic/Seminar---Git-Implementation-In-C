@@ -3,25 +3,34 @@
 
 #include "common.h"
 #include "commit.h"
+#include "file_manip.h"
+
+/*
+###################################################
+#			Structure Definitions				  #
+###################################################
+*/
 
 typedef struct _repo {
 
-	int repoID;
-	char* repoName;
-	char* creatorName;
-	char* gitdir;
-	Head commitTree;
-	Commit workTree;
+	char gitDir[BUFFER_SIZE];
+	char activeDir[BUFFER_SIZE];
+	Head heads;
+	Commit HEAD;
 
-}Repo;
+}repo; typedef repo* Repo;
 
-Repo CreateRepo(char*);
+/*
+###################################################
+#			Repository Operations				  #
+###################################################
+*/
 
-Checkout(char* mode, char* choice); 
-//prima mode:branch/commit i choice string, potrazi choic epreko commitID u aktivnom branchu ili pretrazi u heads po branchName
-
-
-
+Repo GitInit();
+Commit Checkout(Head headCommits, FolderNode stagingArea); 
+int Branch(Head headCommits, Commit activeCommit);
+Commit Merge(Commit toMerge, Head heads);
+int GetHeads(Head heads, char* gitDir);
 
 #endif
 

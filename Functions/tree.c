@@ -1,4 +1,5 @@
-#include "tree.h"
+#include "../Headers/tree.h"
+#include "../Headers/utility.h"
 
 FileNode CreateFileNode(char* path) {
 	FileNode temp = NULL; char* tempHash = NULL;
@@ -7,6 +8,7 @@ FileNode CreateFileNode(char* path) {
 	if (temp == NULL)
 		return NULL;
 
+	strcpy(temp->fileName, (strrchr(path, '/') + 1));
 	strcpy(temp->filePath, path);
 	tempHash = hash(path);
 	if (tempHash == NULL)
@@ -15,6 +17,7 @@ FileNode CreateFileNode(char* path) {
 	strcpy(temp->fileHash,tempHash);
 	free(tempHash);
 	temp->fileState = FILESTATE_COMMITTED;
+	temp->foreignFlag = 0;
 	temp->nextFile = NULL;
 
 	return temp;
@@ -27,12 +30,41 @@ FolderNode CreateFolderNode(char* path) {
 	if (temp == NULL)
 		return NULL;
 
+	strcpy(temp->folderName, (strrchr(path, '/') + 1));
 	strcpy(temp->folderPath, path);
 	temp->fileList = NULL;
 	temp->nextSibling = NULL;
 	temp->firstChild = NULL;
 
 	return temp;
+}
+
+int DeallocateFolderNode(FolderNode toDeallocate) { //posaljes jedan folder, moras dealocirati njegovo djete i na kraju njega nakon sto prije zvanja funkcije postavis firstchild->nextsibling
+	FolderNode currentFolder = toDeallocate, temp = NULL;
+
+	currentFolder = toDeallocate;
+	while (currentFolder!= NULL) {
+		if (currentFolder->firstChild != NULL)
+			DeallocateFolderNode(currentFolder->firstChild);
+
+		DeallocateFileList(currentFolder->fileList);
+
+		temp = currentFolder;
+		currentFolder = currentFolder->nextSibling;
+		free(temp);
+	}
+
+	return RETURN_OK;
+}
+
+int DeallocateFileList(FileNode fileNode) {
+	if (fileNode == NULL)
+		return RETURN_OK;
+
+	DeallocateFileList(fileNode->nextFile);
+	free(fileNode);
+
+	return RETURN_OK;
 }
 
 int InsertChild(FolderNode parentFolder, FolderNode toInsert) {
@@ -58,30 +90,150 @@ int AppendFile(FolderNode folder, FileNode fileToInsert) {
 		return RETURN_OK;
 	}
 	else {
-		while (firstFile->nextFile != NULL)
+		while (firstFile->nextFile != NULL) {
 			firstFile = firstFile->nextFile;
-
+			if(!_strcmpi(firstFile->fileName, fileToInsert->fileName))
+				return RETURN_OK;
+		}
 		firstFile->nextFile = fileToInsert;
 	}
 
 	return RETURN_OK;
 }
 
-unsigned long Hash(const char* str)
-{
-	int key = 3;
-	unsigned long hash = 0;
-	FILE* file = NULL;
-	char buffer[BUFFER_SIZE] = { 0 }, c = 0;
+FileNode FindFile(FolderNode fileTree, char* path) {
+	FolderNode currentFolder = NULL; FileNode currentFile = NULL;
+	FileNode result = NULL;
+	currentFolder = fileTree;
 
-	file = fopen(str, "r");
-	if (file == NULL)
-		return RETURN_WARNING_FILE_OPEN;
+	while (currentFolder != NULL) {
+		if (currentFolder->firstChild != NULL)
+			result=FindFile(currentFolder->firstChild, path);
 
-	while ((c=getc(file))!=EOF) {
-		hash = (hash + key) + (hash-c);
+		if (result != NULL)
+			return result;
+
+		currentFile = currentFolder->fileList;
+		while (currentFile != NULL) {
+			if (!_strcmpi(path, currentFile->filePath))
+				return currentFile;
+			currentFile = currentFile->nextFile;
+		}
+
+		currentFolder = currentFolder->nextSibling;
+	}
+	
+	return result;
+}
+
+int CheckFilestate(FolderNode folderTree, int* stageNum) {
+	FolderNode currentFolder = NULL; FileNode currentFile = NULL;
+	currentFolder = folderTree;
+	currentFile = currentFolder->fileList;
+
+	if (currentFolder == NULL)
+		return RETURN_OK;
+
+	if (currentFolder->firstChild != NULL)
+		CheckFilestate(currentFolder->firstChild, stageNum);
+
+	while (currentFile != NULL) {
+		if (currentFile->fileState == FILESTATE_STAGED) {
+			printf("File staged but not committed: [%s]\n", currentFile->fileName);
+			(*stageNum)++;
+		}
+
+		currentFile = currentFile->nextFile;
 	}
 
-	fclose(file);
-	return hash;
+	if (currentFolder->nextSibling != NULL)
+		CheckFilestate(currentFolder->nextSibling, stageNum);
+
+
+	return RETURN_OK;
+}
+
+int StageForCommit(FolderNode parentFolder, char* passedPath, int replacePosition, FolderNode parentCommitFileTree) //odvija se prije push Commit
+{
+	WIN32_FIND_DATA fdFile;
+	HANDLE hFind = NULL;
+	wchar_t sPath[BUFFER_SIZE];
+	wchar_t sDir[BUFFER_SIZE];
+	FolderNode tempFolder = NULL;
+	FileNode tempFile = NULL;
+	char pathBuffer[BUFFER_SIZE], foreignFilePath[BUFFER_SIZE];
+	char* pathToFile = NULL, * foreignFileHash = NULL;
+
+	mbstowcs(sDir, passedPath, BUFFER_SIZE);
+	wsprintf(sPath, L"%s/*.*", sDir);
+
+	if ((hFind = FindFirstFile(sPath, &fdFile)) == INVALID_HANDLE_VALUE)
+	{
+		wprintf(L"Path not found: [%s]\n", sDir);
+		return RETURN_NOEXIST;
+	}
+
+	do
+	{
+		if (wcscmp(fdFile.cFileName, L".") != 0 && wcscmp(fdFile.cFileName, L"..") != 0 && wcscmp(fdFile.cFileName, L".commit") != 0 && wcscmp(fdFile.cFileName, L".git") != 0)
+		{
+			wsprintf(sPath, L"%s/%s", sDir, fdFile.cFileName); //path do foldera/filea na disku
+			wcstombs(pathBuffer, sPath, BUFFER_SIZE); // -||-
+
+			if (fdFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			{
+				tempFolder = CreateFolderNode(pathBuffer);
+				InsertChild(parentFolder, tempFolder);
+				StageForCommit(tempFolder, pathBuffer, replacePosition, parentCommitFileTree);
+			}
+			else {
+				pathToFile = pathBuffer + replacePosition + 1;
+				snprintf(foreignFilePath, BUFFER_SIZE, "%s/%s", parentCommitFileTree->folderPath, pathToFile);
+				foreignFileHash = hash(foreignFilePath);
+				tempFile = CreateFileNode(pathBuffer);
+				tempFile->fileState = FILESTATE_STAGED;
+
+				if (foreignFileHash == NULL) {
+
+					AppendFile(parentFolder, tempFile);
+					free(foreignFileHash);
+					continue;
+				}
+
+				if (!_strcmpi(tempFile->fileHash, foreignFileHash)) {
+					tempFile->foreignFlag = 1;
+					strcpy(tempFile->filePath, foreignFilePath);
+				}
+
+				AppendFile(parentFolder, tempFile);
+				free(foreignFileHash);
+			}
+		}
+	} while (FindNextFile(hFind, &fdFile));
+
+	FindClose(hFind);
+	return RETURN_OK;
+}
+
+int StageForBranch(FolderNode parentFolder) {
+	FolderNode currentFolder = parentFolder;
+	FileNode currentFile = currentFolder->fileList;
+
+	if (currentFolder == NULL)
+		return RETURN_OK;
+
+	if (currentFolder->firstChild != NULL)
+		StageForBranch(currentFolder->firstChild);
+
+	while (currentFile != NULL) {
+		currentFile->foreignFlag = 1;
+		currentFile = currentFile->nextFile;
+	}
+
+	if (currentFolder->nextSibling != NULL)
+		StageForBranch(currentFolder->nextSibling);
+
+
+	return RETURN_OK;
+
 }
