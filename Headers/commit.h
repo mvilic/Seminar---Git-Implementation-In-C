@@ -47,6 +47,7 @@ int DeallocateBranch(Commit toDeallocate);
 Commit CommonAncestor(Commit commit1, Commit commit2); Commit CheckPathway(Commit commit, char* path); 
 int PrintBranchHistory(Commit currentCommit, Commit headOfBranch);
 int ListBranches(Head headCommits); int ListCommitFiles(FolderNode folderTree);
+Commit FindBranch(Head headCommits, char* branchName);
 
 /*
 ###################################################

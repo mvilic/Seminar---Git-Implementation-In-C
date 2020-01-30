@@ -1,0 +1,4 @@
+Parent: sample_repo/.git/.commits/2754
+Branch: Master
+Foreign: 2365/headers/frgn.txt
+Foreign: 2754/headers/myheader.h

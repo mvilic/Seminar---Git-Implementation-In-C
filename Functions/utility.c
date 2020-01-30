@@ -181,8 +181,9 @@ int Choice() {
 		fgets(lineBuffer, BUFFER_SIZE, stdin);
 		if (lineBuffer[0] == '\n')
 			continue;
-
-		if (sscanf(lineBuffer, "%d", &result) != 1 || tolower(result)!='y' || tolower(result)!='n') {
+		
+		lineBuffer[strlen(lineBuffer) - 1] = '\0';
+		if (sscanf(lineBuffer, "%c", &result) != 1 || (result!='y' && result!='n')) {
 			printf("Invalid choice.\nTry again: ");
 			continue;
 		}
@@ -305,7 +306,14 @@ int ReplaceHeadInIndex(Commit newHead, Commit currentHead) {
 	char buffer[BUFFER_SIZE];
 
 	headsFile = fopen("sample_repo/.git/.heads", "r");
+	if (headsFile == NULL)
+		return RETURN_WARNING_FILE_OPEN;
+
 	tempFile = fopen("sample_repo/.git/.heads_temp", "w");
+	if (tempFile == NULL) {
+		fclose(headsFile);
+		return RETURN_WARNING_FILE_OPEN;
+	}
 
 	while (fgets(buffer, BUFFER_SIZE, headsFile)) {
 		if (strstr(buffer, currentHead->commitPath))
@@ -352,6 +360,10 @@ int ErrorReport(int errnum) {
 		printf("\n\nOperation canceled by the user.\n\n");
 		break;
 	}
+	case RETURN_ERROR_COMMON_ANCESTOR: {
+		printf("\n\nError: Couldn't find common ancestor for given commits.\n\n");
+		break;
+	}
 	case RETURN_OK: {
 		printf("\n\nSuccess.\n\n");
 		break;
@@ -367,29 +379,17 @@ int ErrorReport(int errnum) {
 
 int PrintMenu(char* menu) {
 
-	if (_strcmpi(menu, "Glavni") == 0) {
-		printf("\n\n1:Importati studente, dinamicki alocirati svakog studenta i ispisati podatke o svakom.");
-		printf("\n2:Osnovne manipulacije vezanim listama.");
-		printf("\n3:Zbrajanje i mnozenje polinoma putem vezanih lista.");
-		printf("\n4:Unija i presjek dviju vezanih listi.");
-		printf("\n5:Stog, Red, Kruzni Stog, Red sa prioritetom");
-		printf("\n6:Postfix izrazi");
+	if (_strcmpi(menu, "main") == 0) {
+		printf("\n\n1:Commit/Branch history.");
+		printf("\n2:Commit files list.");
+		printf("\n3:Checkout Commit/Branch");
+		printf("\n4:Commit from Active Directory");
+		printf("\n5:Branch from currently checked out commit");
+		printf("\n6:Merge currently active commit");
 		printf("\n0 to exit.\n");
 		printf("Odabir: ");
 		return RETURN_OK;
 	}
-	else if (_strcmpi(menu, "Liste1") == 0) {
-		printf("\nOdaberite opciju:");
-		printf("\n1. Dodavanje na pocetak liste");
-		printf("\n2. Dodavanje na kraj liste");
-		printf("\n3. Brisanje elementa");
-		printf("\n4. Pronalazak elementa po prezimenu");
-		printf("\n5. Ispis liste");
-		printf("\n6. Vise opcija");
-		printf("\n7. Izlaz\n\nOdabir: ");
-		return RETURN_OK;
-	}
-
 	else
 		return RETURN_OK;
 }

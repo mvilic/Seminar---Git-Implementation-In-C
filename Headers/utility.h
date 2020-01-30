@@ -46,7 +46,7 @@ int PrintMenu(char* menu);
 //Yes/No choice parser
 int Choice(); 
 
-//Numeric choice parsers with lower and upper limiters
+//Numeric choice parser with range limiter
 int Option(int lowerLimit, int upperLimit);
 
 //User input parsing for the Checkout command

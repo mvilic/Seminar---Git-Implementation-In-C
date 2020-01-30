@@ -46,6 +46,7 @@ Commit ConstructCommitTree(char* path, Head heads) {
 	char parseBuffer[BUFFER_SIZE] = { 0 };
 	char* token = NULL;
 	char* entryToken = NULL;
+	int errnum = 0;
 
 	sprintf(pathBuffer, "%s/%s", path, ".commit");
 	fp = fopen(pathBuffer, "r");
@@ -60,6 +61,9 @@ Commit ConstructCommitTree(char* path, Head heads) {
 		if (!_strcmpi(entryToken, "Parent Commit")) {
 			if (_strcmpi(token, "NULL")) {
 				temp = AllocateCommit();
+				if (temp == NULL)
+					return NULL;
+
 				strcpy(temp->commitPath, path);
 				path = strrchr(path, '/') + 1;
 				sscanf(path, "%d", &(temp->commitID));
@@ -79,12 +83,24 @@ Commit ConstructCommitTree(char* path, Head heads) {
 					heads = heads->nextHead;					
 				}
 				temp->fileTree = CreateFolderNode(temp->commitPath);
-				ConstructFileTree(temp->fileTree, temp->commitPath);
+				if (temp->fileTree == NULL)
+					return NULL;
+
+				errnum=ConstructFileTree(temp->fileTree, temp->commitPath);
+				if (errnum != RETURN_OK)
+					return NULL;
+
 				temp->parentCommit = ConstructCommitTree(token, firstHead);
+				if (temp == NULL)
+					return NULL;
+
 				temp->parentCommit->childrenNumber++;
 			}
 			else {
 				temp = AllocateCommit();
+				if (temp == NULL)
+					return NULL;
+
 				strcpy(temp->commitPath, path);
 				path = strrchr(path, '/') + 1;
 				sscanf(path, "%d", &(temp->commitID));
@@ -109,6 +125,7 @@ int ConstructFileTree(FolderNode parentFolder, char* passedPath)
 	FolderNode tempFolder = NULL;
 	FileNode tempFile = NULL;
 	char pathBuffer[BUFFER_SIZE];
+	int errnum = 0;
 
 	mbstowcs(sDir, passedPath, BUFFER_SIZE);
 	wsprintf(sPath, L"%s/*.*", sDir);
@@ -129,11 +146,16 @@ int ConstructFileTree(FolderNode parentFolder, char* passedPath)
 			if (fdFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			{	
 				tempFolder = CreateFolderNode(pathBuffer);
+				if (tempFolder == NULL)
+					return RETURN_ERROR_MEM_ALLOC;
+
 				InsertChild(parentFolder, tempFolder);
-				ConstructFileTree(tempFolder, pathBuffer);
+				errnum=ConstructFileTree(tempFolder, pathBuffer);
 			}
 			else {
 				tempFile = CreateFileNode(pathBuffer);
+				if (tempFile == NULL)
+					return RETURN_ERROR_MEM_ALLOC;
 				AppendFile(parentFolder, tempFile);
 			}
 		}

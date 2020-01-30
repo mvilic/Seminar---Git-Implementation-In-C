@@ -163,6 +163,7 @@ int StageForCommit(FolderNode parentFolder, char* passedPath, int replacePositio
 	FileNode tempFile = NULL;
 	char pathBuffer[BUFFER_SIZE], foreignFilePath[BUFFER_SIZE];
 	char* pathToFile = NULL, * foreignFileHash = NULL;
+	int errnum = 0;
 
 	mbstowcs(sDir, passedPath, BUFFER_SIZE);
 	wsprintf(sPath, L"%s/*.*", sDir);
@@ -183,18 +184,27 @@ int StageForCommit(FolderNode parentFolder, char* passedPath, int replacePositio
 			if (fdFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			{
 				tempFolder = CreateFolderNode(pathBuffer);
+				if (tempFolder == NULL) {
+					return RETURN_ERROR_MEM_ALLOC;
+				}
+
 				InsertChild(parentFolder, tempFolder);
-				StageForCommit(tempFolder, pathBuffer, replacePosition, parentCommitFileTree);
+				errnum=StageForCommit(tempFolder, pathBuffer, replacePosition, parentCommitFileTree);
+				if (errnum != RETURN_OK) {
+					return errnum;
+				}
 			}
 			else {
 				pathToFile = pathBuffer + replacePosition + 1;
 				snprintf(foreignFilePath, BUFFER_SIZE, "%s/%s", parentCommitFileTree->folderPath, pathToFile);
-				foreignFileHash = hash(foreignFilePath);
 				tempFile = CreateFileNode(pathBuffer);
+				if (tempFile == NULL)
+					return RETURN_ERROR_MEM_ALLOC;
+
+				foreignFileHash = hash(foreignFilePath);
 				tempFile->fileState = FILESTATE_STAGED;
 
 				if (foreignFileHash == NULL) {
-
 					AppendFile(parentFolder, tempFile);
 					free(foreignFileHash);
 					continue;

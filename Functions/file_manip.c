@@ -46,6 +46,7 @@ int CreateCommitOnDisk(FolderNode folderTree, int replacePosition, char* commitP
 	char* pathToFolder = NULL;
 	currentFolder = folderTree;
 	char buf[BUFFER_SIZE];
+	int errnum = 0;
 
 	while (currentFolder != NULL) {
 		
@@ -61,14 +62,21 @@ int CreateCommitOnDisk(FolderNode folderTree, int replacePosition, char* commitP
 				strcpy(currentFolder->folderPath, buf);
 				_mkdir(currentFolder->folderPath);
 			}
-			CommitFiles(currentFolder->fileList, currentFolder->folderPath);
-			CreateCommitOnDisk(currentFolder->firstChild, replacePosition, commitPath);
+			errnum=CommitFiles(currentFolder->fileList, currentFolder->folderPath);
+			if (errnum != RETURN_OK)
+				return errnum;
+
+			errnum=CreateCommitOnDisk(currentFolder->firstChild, replacePosition, commitPath);
+			if (errnum != RETURN_OK)
+				return errnum;
 		}
 		else {
 			snprintf(buf, BUFFER_SIZE, "%s%s", commitPath, pathToFolder);
 			strcpy(currentFolder->folderPath, buf);
 			_mkdir(currentFolder->folderPath);
-			CommitFiles(currentFolder->fileList, currentFolder->folderPath);
+			errnum=CommitFiles(currentFolder->fileList, currentFolder->folderPath);
+			if (errnum != RETURN_OK)
+				return errnum;
 		}
 
 		currentFolder = currentFolder->nextSibling;
@@ -99,6 +107,7 @@ int CommitFiles(FileNode fileList, char* folderPath) {
 			destinationFile = fopen(currentFile->filePath, "w");
 			if (destinationFile == NULL) {
 				printf("\nError creating destination file: [%s]\n", currentFile->filePath);
+				fclose(sourceFile);
 				return RETURN_WARNING_FILE_OPEN;
 			}
 
@@ -125,6 +134,7 @@ int CheckoutCommit(FolderNode folderTree, int replacePosition, char* activeDirec
 	char* pathToFolder = NULL;
 	currentFolder = folderTree;
 	char buf[BUFFER_SIZE];
+	int errnum = 0;
 
 	while (currentFolder != NULL) {
 
@@ -138,13 +148,19 @@ int CheckoutCommit(FolderNode folderTree, int replacePosition, char* activeDirec
 				snprintf(buf, BUFFER_SIZE, "%s%s", activeDirectoryPath, pathToFolder);
 				_mkdir(buf);
 			}
-			CheckoutFiles(currentFolder->fileList, buf);
+			
+			errnum=CheckoutFiles(currentFolder->fileList, buf);
+			if (errnum != RETURN_OK)
+				return errnum;
+			
 			CheckoutCommit(currentFolder->firstChild, replacePosition, activeDirectoryPath);
 		}
 		else {
 			snprintf(buf, BUFFER_SIZE, "%s%s", activeDirectoryPath, pathToFolder);
 			_mkdir(buf);
-			CheckoutFiles(currentFolder->fileList, buf);
+			errnum=CheckoutFiles(currentFolder->fileList, buf);
+			if (errnum != RETURN_OK)
+				return errnum;
 		}
 
 		currentFolder = currentFolder->nextSibling;
@@ -172,6 +188,7 @@ int CheckoutFiles(FileNode fileList, char* folderPath) {
 
 		destinationFile = fopen(fileToCreate, "w");
 		if (destinationFile == NULL) {
+			fclose(sourceFile);
 			printf("\nError creating destination file: [%s]\n", currentFile->filePath);
 			return RETURN_WARNING_FILE_OPEN;
 		}

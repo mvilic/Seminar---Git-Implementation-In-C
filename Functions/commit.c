@@ -33,6 +33,9 @@ int DeallocateCommit(Commit toDeallocate) {
 
 int DeallocateBranch(Commit commit) {
 
+	if (commit == NULL)
+		return RETURN_OK;
+
 	if (commit->childrenNumber > 1)
 		return RETURN_OK;
 	
@@ -45,9 +48,14 @@ int DeallocateBranch(Commit commit) {
 	DeallocateFolderNode(commit->fileTree);
 	DeallocateBranch(commit->parentCommit);
 	free(commit);
+	
+	return RETURN_OK;
 }
 
-int DeallocateHead(Head Head) {
+int DeallocateHead(Head head) {
+
+	DeallocateCommit(head->commitPointer);
+	free(head);
 
 	return RETURN_OK;
 }
@@ -72,28 +80,6 @@ Commit FindCommit(Commit currentCommit, int idToFind) {
 		return currentCommit;
 
 	return FindCommit(currentCommit->parentCommit, idToFind);
-}
-
-int GetHeads(Head heads, char* gitDir) {
-	FILE* headsFile = NULL; Head headsStart = heads;
-	char parseBuffer[BUFFER_SIZE];
-	char indexPath[BUFFER_SIZE];
-
-	sprintf(indexPath, "%s/%s", gitDir, ".heads");
-	headsFile = fopen(indexPath, "r");
-	if (headsFile == NULL)
-		return NULL;
-
-	while (fgets(parseBuffer, BUFFER_SIZE, headsFile)) {
-		parseBuffer[strcspn(parseBuffer, "\n")] = '\0';
-		heads->commitPointer = ConstructCommitTree(parseBuffer, headsStart);
-		heads->nextHead = AllocateHead();
-		ForeignReferences(heads->commitPointer);
-		heads = heads->nextHead;
-	}
-
-	fclose(headsFile);
-	return RETURN_OK;
 }
 
 Commit CommonAncestor(Commit commit1, Commit commit2) {
@@ -171,6 +157,7 @@ int InsertForeignReference(FolderNode commitFolder, char* path) {
 	FolderNode tempFolder = NULL; FileNode tempFile = NULL;
 	FolderNode currentWorkingFolder = NULL;
 	FolderNode parentFolder = commitFolder;
+	int errnum = 0;
 	
 	strcpy(auxPathBuffer, path);
 	fileName = strrchr(path, '/') + 1;
@@ -182,6 +169,9 @@ int InsertForeignReference(FolderNode commitFolder, char* path) {
 		sprintf(currentPathBuffer, "%s/%s", currentPathBuffer, token);
 		if (!_strcmpi(fileName, token)) {
 			tempFile = CreateFileNode(currentPathBuffer);
+			if (tempFile == NULL)
+				return RETURN_ERROR_MEM_ALLOC;
+
 			tempFile->foreignFlag = 1;
 			AppendFile(parentFolder, tempFile);
 			return RETURN_OK;
@@ -211,49 +201,27 @@ int InsertForeignReference(FolderNode commitFolder, char* path) {
 	return RETURN_OK;
 }
 
-Commit PushCommit(FolderNode passedFileTree, Commit parentCommit) { //passedFileTree ce imati path sample_repo/active_directory - active_directory treba zaminiti sa .git/.commits/commit_ID
-	char buffer[BUFFER_SIZE] = { 0 };
-	int replacePosition = 0;
-	FILE* commitFile = NULL; FILE* tempFile = NULL;
-	
-	Commit temp = AllocateCommit();
-
-	temp->fileTree = passedFileTree;
-	temp->parentCommit = parentCommit;
-	strcpy(temp->branchName,parentCommit->branchName);
-
-	_mkdir(temp->commitPath);
-	snprintf(buffer, BUFFER_SIZE, "%s/%s", temp->commitPath, ".commit");
-	commitFile = fopen(buffer, "w");
-	fprintf(commitFile, "Parent Commit: %s\nBranch: %s\n", parentCommit->fileTree->folderPath, parentCommit->branchName);
-	fclose(commitFile);
-
-	
-	HandleParentForeigns(temp->fileTree, parentCommit->fileTree, buffer);
-
-	replacePosition = strlen(passedFileTree->folderPath);
-	CreateCommitOnDisk(temp->fileTree, replacePosition, temp->commitPath);
-	
-	PushForeignReferences(temp->fileTree, buffer);
-
-	parentCommit->childrenNumber++;
-	return temp;
-}
-
 int HandleParentForeigns(FolderNode nativeFileTree, FolderNode foreignFileTree, char* commitFilePath) {
 	FolderNode currentFolder = NULL; FileNode currentFile = NULL; FileNode foundFile = NULL;
 	FILE* commitFile = NULL; 
 	char* pathToFile = NULL, * tempHash = NULL, *foreignRef;
 	char filePathBuffer[BUFFER_SIZE];
+	int errnum = 0;
 
 	currentFolder = foreignFileTree;
 
 	while (currentFolder!=NULL) {
 		
 		if (currentFolder->firstChild != NULL)
-			HandleParentForeigns(nativeFileTree, currentFolder->firstChild, commitFilePath);
+			errnum=HandleParentForeigns(nativeFileTree, currentFolder->firstChild, commitFilePath);
 		
+		if (errnum != RETURN_OK)
+			return errnum;
+
 		commitFile = fopen(commitFilePath, "a");
+		if (commitFile == NULL)
+			return RETURN_WARNING_FILE_OPEN;
+
 		currentFile = currentFolder->fileList;
 		while (currentFile != NULL) {
 			if (currentFile->foreignFlag == 1) { //file u parentu koji je stranac.
@@ -269,6 +237,9 @@ int HandleParentForeigns(FolderNode nativeFileTree, FolderNode foreignFileTree, 
 				}
 				else if (!_strcmpi(currentFile->fileHash, tempHash)) {
 					commitFile = fopen(commitFilePath, "a");
+					if (commitFile == NULL)
+						return RETURN_WARNING_FILE_OPEN;
+
 					foreignRef = (strstr(currentFile->filePath, ".commits") + 9);
 					fprintf(commitFile, "Foreign: %s\n", foreignRef);
 					fclose(commitFile);
@@ -293,13 +264,20 @@ int PushForeignReferences(FolderNode nativeFileTree, char *commitFilePath) {
 	FolderNode currentFolder = NULL; FileNode currentFile = NULL;
 	FILE* commitFile = NULL; char* temp = NULL, * temp2 = NULL;
 	currentFolder = nativeFileTree;
+	int errnum = 0;
 
 	while (currentFolder != NULL) {
 
 		if (currentFolder->firstChild != NULL)
-			PushForeignReferences(currentFolder->firstChild, commitFilePath);
+			errnum=PushForeignReferences(currentFolder->firstChild, commitFilePath);
 		
+		if (errnum != RETURN_OK)
+			return errnum;
+
 		commitFile = fopen(commitFilePath, "a");
+		if (commitFile == NULL)
+			return RETURN_WARNING_FILE_OPEN;
+
 		currentFile = currentFolder->fileList;
 		while (currentFile != NULL) {
 			temp2 = strstr(currentFile->filePath, "active_directory");
@@ -326,6 +304,7 @@ int BranchForeignReferences(Commit branchedCommit, Commit parentCommit) {
 	char* pathToken = NULL;
 	char* entryToken = NULL;
 	char* commitID = NULL;
+	int errnum = 0;
 
 	sprintf(indexFilePath, "%s/%s", parentCommit->commitPath, ".commit");
 	fp = fopen(indexFilePath, "r");
@@ -338,7 +317,10 @@ int BranchForeignReferences(Commit branchedCommit, Commit parentCommit) {
 		entryToken = strtok(parseBuffer, ":");
 
 		if (!_strcmpi(entryToken, "Foreign"))
-			InsertForeignReference(branchedCommit->fileTree, pathToken);
+			errnum=InsertForeignReference(branchedCommit->fileTree, pathToken);
+
+		if (errnum != RETURN_OK)
+			return errnum;
 	}
 
 	fclose(fp);
@@ -352,14 +334,17 @@ int MergePass(FolderNode toMergeTree, FolderNode mergeIntoTree, FolderNode commo
 	FileNode currentToMergeFile = NULL, currentMergeIntoFile = NULL, currentCommonAncestorFile = NULL;
 	char* pathToFile = NULL;
 	char pathBuffer[BUFFER_SIZE], pathBufferAncestor[BUFFER_SIZE], exPathToFile[BUFFER_SIZE];
-	int choice = 0;
+	int choice = 0, errnum = 0;
 
 	currentToMergeFolder = toMergeTree;
 	currentMergeIntoFolder = mergeIntoTree;
 
 	while (currentMergeIntoFolder != NULL) {
 		if (currentMergeIntoFolder->firstChild != NULL)
-			MergePass(toMergeTree, currentMergeIntoFolder->firstChild, commonAncestorTree, mergeOriginCommitPath);
+			errnum=MergePass(toMergeTree, currentMergeIntoFolder->firstChild, commonAncestorTree, mergeOriginCommitPath);
+
+		if (errnum != RETURN_OK)
+			return errnum;
 
 		currentMergeIntoFile = currentMergeIntoFolder->fileList; //fileovi iz master brancha
 		while (currentMergeIntoFile != NULL) {
@@ -371,7 +356,10 @@ int MergePass(FolderNode toMergeTree, FolderNode mergeIntoTree, FolderNode commo
 
 			currentToMergeFile = FindFile(toMergeTree, pathBuffer); //pronadji u ishodistu mergea file iz odredista
 			if (currentToMergeFile == NULL) { //ako ga nisi nasa dodaj ga u novi commit
-				InsertForeignReference(toMergeTree, exPathToFile);
+				errnum=InsertForeignReference(toMergeTree, exPathToFile);
+				if (errnum != RETURN_OK)
+					return errnum;
+
 				currentMergeIntoFile = currentMergeIntoFile->nextFile;
 				continue;
 			}
@@ -385,7 +373,7 @@ int MergePass(FolderNode toMergeTree, FolderNode mergeIntoTree, FolderNode commo
 
 				//ne postoji u zajednickom ancestoru ili i jedan i drugi su razliciti od zajednickog izvornog filea. oba slucaja znace konflikt
 				if (currentCommonAncestorFile == NULL || (_strcmpi(currentMergeIntoFile->fileHash, currentCommonAncestorFile->fileHash))) {
-					printf("A conflict has occured. Choose which file to keep:\n1: [%s]\n2: [%s]\nChoice: ", currentMergeIntoFile->filePath, currentToMergeFile->filePath);
+					printf("\nA conflict has occured. Choose which file to keep:\n1: [%s]\n2: [%s]\nChoice: ", currentMergeIntoFile->filePath, currentToMergeFile->filePath);
 					choice = Option(1, 2);
 					if (choice == 1) { //korisnik odabrao file iz izvorista mergea
 						currentMergeIntoFile = currentMergeIntoFile->nextFile;
@@ -452,4 +440,16 @@ int ListCommitFiles(FolderNode folderTree) {
 	}
 
 	return RETURN_OK;
+}
+
+Commit FindBranch(Head headCommits, char* branchName) {
+
+	while (headCommits->nextHead != NULL) {
+		if(_strcmpi(headCommits->commitPointer->branchName, branchName)==0);
+			return headCommits->commitPointer;
+	
+		headCommits = headCommits->nextHead;
+	}
+
+	return NULL;
 }

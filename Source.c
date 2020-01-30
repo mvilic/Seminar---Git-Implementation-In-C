@@ -22,6 +22,7 @@ int main() {
 	FILE* fp = NULL;
 	int errnum = 0;
 	char choice = 0;
+	Commit result = NULL;
 
 	repo = GitInit();
 	if (repo == NULL) {
@@ -35,24 +36,48 @@ int main() {
 		return errnum;
 	}
 
-	ListCommitFiles(repo->heads->commitPointer->fileTree);
+	repo->HEAD = FindBranch(repo->heads, "Master");
 
 	do {
 		PrintMenu("main");
-		choice = Option(0, 9);
+		choice = Option(0, 6);
 
 		switch (choice) {
-		
-		
-		
+		case 0:
+			DeallocateRepo(repo);
+			return RETURN_OK;
+		case 1:
+			errnum = History(repo->heads);
+			if (errnum != RETURN_OK)
+				ErrorReport(errnum);
+			break;
+		case 2:
+			errnum = FilesList(repo->heads);
+			if (errnum != RETURN_OK)
+				ErrorReport(errnum);
+			break;
+		case 3:
+			result = Checkout(repo);
+			if(result!=NULL)
+				repo->HEAD = result;
+			break;
+		case 4:
+			result= PushCommit(repo->activeDir, repo->HEAD);
+			if (result != NULL)
+				repo->HEAD = result;
+			break;
+		case 5:
+			errnum = Branch(repo->heads, repo->HEAD);
+			break;
+		case 6:
+			repo->HEAD = Merge(repo->HEAD, repo->heads);
+			break;
+		default:	
+			printf("Invalid entry. Please try again.\n");
+			continue;
 		}
 
 	} while (1);
-	
-	//CheckoutCommit(heads->commitPointer->fileTree, strlen(heads->commitPointer->commitPath), "sample_repo/active_directory");
-	/*FolderNode StagingArea = CreateFolderNode("sample_repo/active_directory");
-	StageForCommit(StagingArea, StagingArea->folderPath, strlen(StagingArea->folderPath), heads->commitPointer->fileTree);
-	PushCommit(StagingArea, heads->commitPointer);*/
 
 	return RETURN_OK;
-	}
+}

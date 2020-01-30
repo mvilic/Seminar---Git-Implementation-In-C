@@ -22,15 +22,26 @@ typedef struct _repo {
 
 /*
 ###################################################
-#			Repository Operations				  #
+#			Initialisation Routine				  #
 ###################################################
 */
 
 Repo GitInit();
-Commit Checkout(Head headCommits, FolderNode stagingArea); 
+int GetHeads(Head heads, char* gitDir);
+
+/*
+###################################################
+#			Repository Operations				  #
+###################################################
+*/
+
+Commit Checkout(Repo repo); 
 int Branch(Head headCommits, Commit activeCommit);
 Commit Merge(Commit toMerge, Head heads);
-int GetHeads(Head heads, char* gitDir);
+Commit PushCommit(char* activeDirPath, Commit parentCommit);
+int History(Head headCommits);
+int FilesList(Head headCommits);
+int DeallocateRepo(Repo repo);
 
 #endif
 
