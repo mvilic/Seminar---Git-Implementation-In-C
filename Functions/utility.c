@@ -386,6 +386,7 @@ int PrintMenu(char* menu) {
 		printf("\n4:Commit from Active Directory");
 		printf("\n5:Branch from currently checked out commit");
 		printf("\n6:Merge currently active commit");
+		printf("\n7:Show currently active commit.");
 		printf("\n0 to exit.\n");
 		printf("Odabir: ");
 		return RETURN_OK;

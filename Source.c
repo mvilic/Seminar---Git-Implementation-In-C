@@ -10,11 +10,11 @@
 int main() {
 	Repo repo = NULL;
 	FolderNode stagingArea = NULL;
-	FILE* fp = NULL;
 	int errnum = 0;
 	char choice = 0;
 	Commit result = NULL;
 
+	srand(time(NULL));
 	repo = GitInit();
 	if (repo == NULL) {
 		printf("Error while initializing repository. Exiting.");
@@ -31,7 +31,7 @@ int main() {
 
 	do {
 		PrintMenu("main");
-		choice = Option(0, 6);
+		choice = Option(0, 7);
 
 		switch (choice) {
 		case 0:
@@ -51,17 +51,31 @@ int main() {
 			result = Checkout(repo);
 			if(result!=NULL)
 				repo->HEAD = result;
+			ShowActiveCommit(repo->HEAD);
 			break;
 		case 4:
-			result= PushCommit(repo->activeDir, repo->HEAD);
-			if (result != NULL)
+			result= PushCommit(repo->activeDir, repo->HEAD, repo->heads);
+			if (result != NULL) {
 				repo->HEAD = result;
+			}
+			ShowActiveCommit(repo->HEAD);
 			break;
 		case 5:
 			errnum = Branch(repo->heads, repo->HEAD);
+			if (result != NULL) {
+				repo->HEAD = result;
+			}
+			ShowActiveCommit(repo->HEAD);
 			break;
 		case 6:
-			repo->HEAD = Merge(repo->HEAD, repo->heads);
+			result = Merge(repo->HEAD, repo->heads);
+			if (result != NULL) {
+				repo->HEAD = result;
+			}
+			ShowActiveCommit(repo->HEAD);
+			break;
+		case 7:
+			ShowActiveCommit(repo->HEAD);
 			break;
 		default:	
 			printf("Invalid entry. Please try again.\n");

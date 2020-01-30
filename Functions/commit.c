@@ -16,6 +16,7 @@ Commit AllocateCommit() {
 
 	GetLocalTime(&(temp->commitDate));
 	temp->commitID = temp->commitDate.wYear + temp->commitDate.wMonth + temp->commitDate.wDay + temp->commitDate.wHour + temp->commitDate.wMinute + temp->commitDate.wSecond;
+	temp->commitID += ((rand() % (300 + 1 - 100)) + 100);
 	snprintf(temp->commitPath, BUFFER_SIZE, "sample_repo/.git/.commits/%d", temp->commitID);
 
 	return temp;
@@ -349,7 +350,7 @@ int MergePass(FolderNode toMergeTree, FolderNode mergeIntoTree, FolderNode commo
 		currentMergeIntoFile = currentMergeIntoFolder->fileList; //fileovi iz master brancha
 		while (currentMergeIntoFile != NULL) {
 			pathToFile = strstr(currentMergeIntoFile->filePath, ".commits"); //path to file postaje .commits/2118/..../file.c
-			pathToFile = strchr(pathToFile, '/') + 1; //path to file postaje 2118/.../file.c
+			pathToFile = strchr(pathToFile, '/') + 1; //path to file postaje ####/.../file.c
 			strcpy(exPathToFile, pathToFile); //####/.../file.c se sprema za ubacivanje u stablo
 			pathToFile = strchr(pathToFile, '/') + 1; //path to file postaje .../file.c
 			snprintf(pathBuffer, BUFFER_SIZE, "%s/%s", mergeOriginCommitPath, pathToFile); //path to file postaje sample_repo/.git/.commits/2547/.../file.c

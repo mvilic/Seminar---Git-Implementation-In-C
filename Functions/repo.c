@@ -91,6 +91,8 @@ Commit Checkout(Repo repo) {
 		return errnum;
 	}
 
+	printf("\n\nCommit [%d] checked out successfully.", commitToCheckout->commitID);
+
 	return commitToCheckout;
 }
 
@@ -100,22 +102,13 @@ int Branch(Head headCommits, Commit activeCommit){
 	Commit temp = NULL;
 	FILE* headsFile = NULL, * commitFile = NULL;
 
-	//do {
-		printf("Enter new branch name. Enter 0 to exit\nInput: ");
-		scanf("%s", newBranchName);
 
-		if (!_strcmpi(newBranchName, "0"))
-			return RETURN_USER_ABORT;
-		
-		/*if (FindBranch(headCommits, newBranchName) != NULL) {
-			printf("Branch with that name already exists.\n");
-			continue;
-		}
-		else
-			break;
+	printf("Enter new branch name. Enter 0 to exit\nInput: ");
+	scanf("%s", newBranchName);
+
+	if (!_strcmpi(newBranchName, "0"))
+		return RETURN_USER_ABORT;	
 	
-	} while (1);*/
-
 	temp = AllocateCommit();
 	if (temp == NULL)
 		return RETURN_ERROR_MEM_ALLOC;
@@ -183,11 +176,12 @@ int Branch(Head headCommits, Commit activeCommit){
 
 	AppendHeadToIndex(temp);
 	activeCommit->childrenNumber++;
+	printf("\n\nSuccessfully branched CommitID: [%d] from Branch: [%s] into new Branch: [%s]", temp->commitID, temp->parentCommit->branchName, temp->branchName);
 
 	return RETURN_OK;
 }
 
-Commit PushCommit(char* activeDirPath, Commit parentCommit) { //passedFileTree ce imati path sample_repo/active_directory
+Commit PushCommit(char* activeDirPath, Commit parentCommit, Head heads) { //passedFileTree ce imati path sample_repo/active_directory
 	char buffer[BUFFER_SIZE] = { 0 };
 	int replacePosition = 0, errnum = 0;
 	FILE* commitFile = NULL; FILE* tempFile = NULL;
@@ -223,6 +217,7 @@ Commit PushCommit(char* activeDirPath, Commit parentCommit) { //passedFileTree c
 	if (commitFile == NULL) {
 		ErrorReport(RETURN_WARNING_FILE_OPEN);
 		DeallocateCommit(temp);
+		DeallocateFolderNode(stagingArea);
 		return NULL;
 	}
 
@@ -233,6 +228,7 @@ Commit PushCommit(char* activeDirPath, Commit parentCommit) { //passedFileTree c
 	if (errnum != RETURN_OK) {
 		ErrorReport(RETURN_WARNING_FILE_OPEN);
 		DeallocateCommit(temp);
+		DeallocateFolderNode(stagingArea);
 		return NULL;
 	}
 
@@ -241,6 +237,7 @@ Commit PushCommit(char* activeDirPath, Commit parentCommit) { //passedFileTree c
 	if (errnum != RETURN_OK) {
 		ErrorReport(errnum);
 		DeallocateCommit(temp);
+		DeallocateFolderNode(stagingArea);
 		return NULL;
 	}
 	
@@ -248,11 +245,49 @@ Commit PushCommit(char* activeDirPath, Commit parentCommit) { //passedFileTree c
 	if (errnum != RETURN_OK) {
 		ErrorReport(errnum);
 		DeallocateCommit(temp);
+		DeallocateFolderNode(stagingArea);
 		return NULL;
 	}
 
 	errnum = ReplaceHeadInIndex(temp, parentCommit);
+	if (errnum != RETURN_OK) {
+		ErrorReport(errnum);
+		DeallocateCommit(temp);
+		DeallocateFolderNode(stagingArea);
+		return NULL;
+	}
+
+	while (heads->nextHead != NULL) {
+		if (heads->commitPointer == parentCommit) {
+			heads->commitPointer = temp;
+			break;
+		}
+		heads = heads->nextHead;
+	}
+
+	DeallocateFolderNode(stagingArea);
+	temp->fileTree = CreateFolderNode(temp->commitPath);
+	if (temp->fileTree == NULL) {
+		DeallocateCommit(temp);
+		return NULL;
+	}
+
+	errnum = ConstructFileTree(temp->fileTree, temp->commitPath);
+	if (errnum != NULL) {
+		ErrorReport(errnum);
+		DeallocateCommit(temp);
+		return NULL;
+	}
+
+	errnum=BranchForeignReferences(temp, parentCommit);
+	if (errnum != NULL) {
+		ErrorReport(errnum);
+		DeallocateCommit(temp);
+		return NULL;
+	}
+
 	parentCommit->childrenNumber++;
+	printf("\n\nChanges committed successfully into Commit: [%d], Branch: [%s]", temp->commitID, temp->branchName);
 	return temp;
 }
 
@@ -332,7 +367,6 @@ Commit Merge(Commit toMerge, Head heads) {
 		return NULL;
 	}
 
-	//sredi izmjenu heada
 	errnum=ReplaceHeadInIndex(newCommit, mergeInto);
 	if(errnum!=RETURN_OK) {
 		ErrorReport(errnum);
@@ -340,6 +374,15 @@ Commit Merge(Commit toMerge, Head heads) {
 		return NULL;
 	}
 
+	while (heads->nextHead != NULL) {
+		if (heads->commitPointer == mergeInto) {
+			heads->commitPointer = newCommit;
+			break;
+		}
+		heads = heads->nextHead;
+	}
+
+	printf("\n\nSuccessfully merged Commit: [%d] from Branch: [%s] into Branch: [%s]", toMerge->commitID, toMerge->branchName, mergeInto->branchName);
 	return newCommit;
 }
 
@@ -367,5 +410,11 @@ int FilesList(Head headCommits) {
 		return RETURN_USER_ABORT;
 
 	ListCommitFiles(chosenCommit->fileTree);
+	return RETURN_OK;
+}
+
+int ShowActiveCommit(Commit activeCommit) {
+
+	printf("\nCurrently active commit:\nCommitID: [%d]\nBranch:[%s]\n", activeCommit->commitID, activeCommit->branchName);
 	return RETURN_OK;
 }

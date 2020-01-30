@@ -38,10 +38,10 @@ int GetHeads(Head heads, char* gitDir);
 Commit Checkout(Repo repo); 
 int Branch(Head headCommits, Commit activeCommit);
 Commit Merge(Commit toMerge, Head heads);
-Commit PushCommit(char* activeDirPath, Commit parentCommit);
+Commit PushCommit(char* activeDirPath, Commit parentCommit, Head heads);
 int History(Head headCommits);
 int FilesList(Head headCommits);
 int DeallocateRepo(Repo repo);
-
+int ShowActiveCommit(Commit activeCommit);
 #endif
 
