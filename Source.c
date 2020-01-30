@@ -6,16 +6,7 @@
 #include "Headers/tree.h"
 #include "Headers/utility.h"
 #include <errno.h>
-/*
 
-#########################################################################
-		To Do:
-				Izbornik
-				Error checkanje i handleanje
-
-#########################################################################
-
-*/
 int main() {
 	Repo repo = NULL;
 	FolderNode stagingArea = NULL;
