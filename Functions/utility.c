@@ -231,7 +231,7 @@ Commit CheckoutInputParse(Head heads) {
 		lineBuffer[strlen(lineBuffer)-1] = '\0';
 
 		//provjeri jeli uneseno ime brancha
-		while (currentHead->nextHead != NULL) {
+		while (currentHead != NULL) {
 			if (!_strcmpi(currentHead->commitPointer->branchName, lineBuffer)) {
 				selectedCommit = currentHead->commitPointer;
 				return selectedCommit;

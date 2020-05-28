@@ -33,8 +33,10 @@ int ListDirectoryContents(const wchar_t*);
 //Returns a new string starting after the first occurence of the delimiter in the passed string
 char* DelimiterSlice(char* string, char delimiter);
 
+//Prints out passed error
 int ErrorReport(int errnum);
 
+//Prints out menu of options
 int PrintMenu(char* menu);
 
 /*

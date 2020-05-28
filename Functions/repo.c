@@ -2,6 +2,12 @@
 #include "../Headers/utility.h"
 #include "../Headers/io.h"
 
+/*
+###################################################
+#				Memory Management				  #
+###################################################
+*/
+
 int DeallocateRepo(Repo repo) {
 	Head currentHead = repo->heads;
 	Head temp = NULL;
@@ -18,6 +24,13 @@ int DeallocateRepo(Repo repo) {
 	return RETURN_OK;
 }
 
+/*
+###################################################
+#			Initialisation Routine				  #
+###################################################
+*/
+
+//Initializes the repository object upon application launch
 Repo GitInit() {
 	Repo temp = NULL;
 
@@ -38,6 +51,8 @@ Repo GitInit() {
 	return temp;
 }
 
+//Reads references to head commits of all branches in the repository
+//Instantiates the complete repository commit tree from read references
 int GetHeads(Head heads, char* gitDir) {
 	FILE* headsFile = NULL; Head headsStart = heads, temp = NULL;
 	char parseBuffer[BUFFER_SIZE];
@@ -66,6 +81,12 @@ int GetHeads(Head heads, char* gitDir) {
 	fclose(headsFile);
 	return RETURN_OK;
 }
+
+/*
+###################################################
+#			Repository Operations				  #
+###################################################
+*/
 
 Commit Checkout(Repo repo) {
 	Commit commitToCheckout = NULL;
@@ -257,7 +278,7 @@ Commit PushCommit(char* activeDirPath, Commit parentCommit, Head heads) { //pass
 		return NULL;
 	}
 
-	while (heads->nextHead != NULL) {
+	while (heads != NULL) {
 		if (heads->commitPointer == parentCommit) {
 			heads->commitPointer = temp;
 			break;
@@ -374,7 +395,7 @@ Commit Merge(Commit toMerge, Head heads) {
 		return NULL;
 	}
 
-	while (heads->nextHead != NULL) {
+	while (heads != NULL) {
 		if (heads->commitPointer == mergeInto) {
 			heads->commitPointer = newCommit;
 			break;

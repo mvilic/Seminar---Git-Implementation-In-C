@@ -22,11 +22,23 @@ typedef struct _repo {
 
 /*
 ###################################################
+#				Memory Management				  #
+###################################################
+*/
+
+int DeallocateRepo(Repo repo);
+
+/*
+###################################################
 #			Initialisation Routine				  #
 ###################################################
 */
 
+//Initializes the repository object upon application launch
 Repo GitInit();
+
+//Reads references to head commits of all branches in the repository
+//Instantiates the complete repository commit tree from read references
 int GetHeads(Head heads, char* gitDir);
 
 /*
@@ -41,7 +53,6 @@ Commit Merge(Commit toMerge, Head heads);
 Commit PushCommit(char* activeDirPath, Commit parentCommit, Head heads);
 int History(Head headCommits);
 int FilesList(Head headCommits);
-int DeallocateRepo(Repo repo);
 int ShowActiveCommit(Commit activeCommit);
 #endif
 

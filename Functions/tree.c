@@ -1,6 +1,13 @@
 #include "../Headers/tree.h"
 #include "../Headers/utility.h"
 
+/*
+###################################################
+#				Memory Management				  #
+###################################################
+*/
+
+//Instantiate file node with given path
 FileNode CreateFileNode(char* path) {
 	FileNode temp = NULL; char* tempHash = NULL;
 	temp = (FileNode)malloc(sizeof(*temp));
@@ -23,6 +30,7 @@ FileNode CreateFileNode(char* path) {
 	return temp;
 }
 
+//Instantiate folder node with given path
 FolderNode CreateFolderNode(char* path) {
 	FolderNode temp = NULL;
 	temp = (FolderNode)malloc(sizeof(*temp));
@@ -39,7 +47,8 @@ FolderNode CreateFolderNode(char* path) {
 	return temp;
 }
 
-int DeallocateFolderNode(FolderNode toDeallocate) { //posaljes jedan folder, moras dealocirati njegovo djete i na kraju njega nakon sto prije zvanja funkcije postavis firstchild->nextsibling
+//Recursively deallocate given folder tree and it's file lists
+int DeallocateFolderNode(FolderNode toDeallocate) {
 	FolderNode currentFolder = toDeallocate, temp = NULL;
 
 	currentFolder = toDeallocate;
@@ -57,6 +66,7 @@ int DeallocateFolderNode(FolderNode toDeallocate) { //posaljes jedan folder, mor
 	return RETURN_OK;
 }
 
+//Deallocate given file list
 int DeallocateFileList(FileNode fileNode) {
 	if (fileNode == NULL)
 		return RETURN_OK;
@@ -67,6 +77,13 @@ int DeallocateFileList(FileNode fileNode) {
 	return RETURN_OK;
 }
 
+/*
+###################################################
+#				General Functions				  #
+###################################################
+*/
+
+//Inserts a child folder into the parent folder's tree
 int InsertChild(FolderNode parentFolder, FolderNode toInsert) {
 	FolderNode firstChild = parentFolder->firstChild; //da bi se moglo setati po listi dijece i siblinga bez utjecanja na originalnu strukturu
 
@@ -82,6 +99,7 @@ int InsertChild(FolderNode parentFolder, FolderNode toInsert) {
 	return RETURN_OK;
 }
 
+//Appends a file node into the given folder's file list
 int AppendFile(FolderNode folder, FileNode fileToInsert) {
 	FileNode firstFile = folder->fileList;
 
@@ -101,6 +119,7 @@ int AppendFile(FolderNode folder, FileNode fileToInsert) {
 	return RETURN_OK;
 }
 
+//Returns file node from given tree, NULL if not found
 FileNode FindFile(FolderNode fileTree, char* path) {
 	FolderNode currentFolder = NULL; FileNode currentFile = NULL;
 	FileNode result = NULL;
@@ -126,6 +145,13 @@ FileNode FindFile(FolderNode fileTree, char* path) {
 	return result;
 }
 
+/*
+###################################################
+#				Staging Area					  #
+###################################################
+*/
+
+//Checks for staged files in active directory
 int CheckFilestate(FolderNode folderTree, int* stageNum) {
 	FolderNode currentFolder = NULL; FileNode currentFile = NULL;
 	currentFolder = folderTree;
@@ -153,7 +179,8 @@ int CheckFilestate(FolderNode folderTree, int* stageNum) {
 	return RETURN_OK;
 }
 
-int StageForCommit(FolderNode parentFolder, char* passedPath, int replacePosition, FolderNode parentCommitFileTree) //odvija se prije push Commit
+//Stages active directory for commiting into the repository
+int StageForCommit(FolderNode parentFolder, char* passedPath, int replacePosition, FolderNode parentCommitFileTree)
 {
 	WIN32_FIND_DATA fdFile;
 	HANDLE hFind = NULL;
@@ -178,9 +205,11 @@ int StageForCommit(FolderNode parentFolder, char* passedPath, int replacePositio
 	{
 		if (wcscmp(fdFile.cFileName, L".") != 0 && wcscmp(fdFile.cFileName, L"..") != 0 && wcscmp(fdFile.cFileName, L".commit") != 0 && wcscmp(fdFile.cFileName, L".git") != 0)
 		{
-			wsprintf(sPath, L"%s/%s", sDir, fdFile.cFileName); //path do foldera/filea na disku
-			wcstombs(pathBuffer, sPath, BUFFER_SIZE); // -||-
+			//Path to folder/file in the active directory
+			wsprintf(sPath, L"%s/%s", sDir, fdFile.cFileName);
+			wcstombs(pathBuffer, sPath, BUFFER_SIZE);
 
+			//Found a directory. Instantiate and recurse
 			if (fdFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			{
 				tempFolder = CreateFolderNode(pathBuffer);
@@ -194,6 +223,7 @@ int StageForCommit(FolderNode parentFolder, char* passedPath, int replacePositio
 					return errnum;
 				}
 			}
+			//Found a file. Set it's foreign flag according to changes made/not made to the file and append it
 			else {
 				pathToFile = pathBuffer + replacePosition + 1;
 				snprintf(foreignFilePath, BUFFER_SIZE, "%s/%s", parentCommitFileTree->folderPath, pathToFile);
@@ -225,6 +255,7 @@ int StageForCommit(FolderNode parentFolder, char* passedPath, int replacePositio
 	return RETURN_OK;
 }
 
+//Stages files for branching by marking them all as foreign references
 int StageForBranch(FolderNode parentFolder) {
 	FolderNode currentFolder = parentFolder;
 	FileNode currentFile = currentFolder->fileList;
@@ -245,5 +276,4 @@ int StageForBranch(FolderNode parentFolder) {
 
 
 	return RETURN_OK;
-
 }
